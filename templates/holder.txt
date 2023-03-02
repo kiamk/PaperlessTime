@@ -1,0 +1,43 @@
+{{ form.hidden_tag() }}
+        {{ form.name(class="form-control", placeholder="Enter Name (ex:first last)") }}
+        <br/>
+        {{ form.username(class="form-control", placeholder="Enter Username") }}
+        <br/>
+        {{ form.password(class="form-control", placeholder="Enter Password") }}
+        <br/>
+        {{ form.email(class="form-control", placeholder="Enter a Valid Email") }}
+        <br/>
+        {{ form.phone_number(class="form-control", placeholder="Enter Phone Number (ex: 5189151238)") }}
+        <br/>
+        {{ form.submit(class="btn btn-primary") }}
+
+
+
+{{ form.hidden_tag() }}
+        {{ form.name(class="form-label") }}
+        {{ form.name(class="form-control") }}
+        <br/>
+        {{ form.username(class="form-label") }}
+        {{ form.username(class="form-control") }}
+        <br/>
+        {{ form.password(class="form-label") }}
+        {{ form.password(class="form-control") }}
+        <br/>
+        {{ form.email(class="form-label") }}
+        {{ form.email(class="form-control") }}
+        <br/>
+        {{ form.phone_number(class="form-label") }}
+        {{ form.phone_number(class="form-control") }}
+        <br/>
+        {{ form.submit(class="btn btn-primary") }}
+
+<div class = "shadow p-3 mb-5 bg-body rounded">
+            <form form action="/" method="post">
+                {{ form.hidden_tag() }}
+                {{ form.username(class="form-control", placeholder="Enter Username") }}
+                <br/>
+                {{ form.password(class="form-control", placeholder="Enter Password") }}
+                <br/>
+                {{ form.login(class="btn btn-primary") }}
+            </form>
+        </div>

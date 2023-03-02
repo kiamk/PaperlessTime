@@ -1,0 +1,6 @@
+runtime: python310
+
+handlers:
+- url: /paperlessicon.ico
+  static_files: static/paperlessicon.ico
+  upload: static/paperlessicon.ico

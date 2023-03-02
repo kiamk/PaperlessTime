@@ -1,0 +1,36 @@
+<!-- Kiam Kaiser
+     CS498
+     Professor Scott Spetka -->
+{% extends 'base.html' %}
+
+{% block content %}
+    {% for message in get_flashed_messages() %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    {% endfor %}
+
+    <center>
+    <h1>Please enter your information</h1>
+    <p>Press Submit when finished</p>
+    <br/>
+    <br/>
+    <form form action="/add_employee" method="post">
+        {{ form.hidden_tag() }}
+        {{ form.name(class="form-control", placeholder="Enter Name (ex:first last)") }}
+        <br/>
+        {{ form.username(class="form-control", placeholder="Enter Username") }}
+        <br/>
+        {{ form.password(class="form-control", placeholder="Enter Password") }}
+        <br/>
+        {{ form.email(class="form-control", placeholder="Enter a Valid Email") }}
+        <br/>
+        {{ form.phone_number(class="form-control", placeholder="Enter Phone Number (ex: 5189151238)") }}
+        <br/>
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+    </center>
+{% endblock %}
