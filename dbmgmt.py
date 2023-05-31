@@ -14,16 +14,17 @@ class dbmgmt:
     # Variable name key:
     #   sel = selected
     #   emp = employee
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     # test variables
     clock_in_array = [(int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")), 1),
                       (int(datetime.datetime.now().strftime("%Y%m%d%H%M%S")), 0),
                       (0, 0)]
     test_employee_w_id = (0, 'bob flanner', 'bflanner', '123', 'bflanner@yahoo.com', 5185555555, clock_in_array,)
-    test_employee = ('Aaron Smith', 'Asmith', '456', 'aaronsmith@yahoo.com', '518-218-0700',)
+    test_employee = ('Aaron Smith', 'Asmith', '456', 'aaronsmith@yahoo.com', '518-218-0700', 0)
 
     # Creating the table for employees if it does not exist
+    #for position: 0 = employee, 1 = manager, 2 = owner
     cur.execute("""CREATE TABLE IF NOT EXISTS employees(
        employee_id INT PRIMARY KEY,
        name TEXT,
@@ -31,6 +32,7 @@ class dbmgmt:
        password TEXT,
        email TEXT,
        phone_number INT,
+       position INT,
        clock_in_history LONG VARCHAR
        );
     """)
@@ -42,16 +44,33 @@ class dbmgmt:
 
 
     # add a new employee to the employee table. return 0 if fail and 1 if success
-    # add_new_employee(name TEXT, username TEXT, password TEXT, email TEXT, phone_number INT)
+    # add_new_employee(name TEXT, username TEXT, password TEXT, email TEXT, phone_number INT, position INT)
     def add_new_employee(self, employee_info):
         # the 7 lines below pull the prior empid from the database and turn it into an int
+        self.cur.execute("""CREATE TABLE IF NOT EXISTS employees(
+            employee_id INT PRIMARY KEY,
+            name TEXT,
+            username TEXT,
+            password TEXT,
+            email TEXT,
+            phone_number INT,
+            position INT,
+            clock_in_history LONG VARCHAR
+        );
+        """)
         self.cur.execute("SELECT employee_id FROM employees;")
         empid = self.cur.fetchall()
-        empid = str(empid[len(empid)-1])
-        empid = empid.replace('(', '')
-        empid = empid.replace(',', '')
-        empid = empid.replace(')', '')
-        empid = int(empid)
+        
+        #try to find the previous user empid and if there is no previous user set empid to 0
+        try:
+            empid = str(empid[len(empid)-1])
+            empid = empid.replace('(', '')
+            empid = empid.replace(',', '')
+            empid = empid.replace(')', '')
+            empid = int(empid)
+        except(IndexError):
+            empid = 0
+        
 
         # The 14 lines below ensure that the same employee will not be entered twice return 0 if fail
         self.cur.execute("SELECT name FROM employees;")
@@ -88,19 +107,21 @@ class dbmgmt:
         # the lines below hash the password to ensure it is secure
         password_hash = generate_password_hash(employee_info[2])
 
-        # the 5 lines below ensure that the tuple is properly formatted and add the correct employee_id
+        # the lines below ensure that the tuple is properly formatted and add the correct employee_id
         list_employee_info = list(employee_info)
         list_employee_info[1] = list_employee_info[1].lower()
         list_employee_info[2] = password_hash
-        #figure out json dump and add comment explaining
         if type(list_employee_info[4]) != int:
             list_employee_info[4] = re.sub(r'[^0-9]', '', list_employee_info[4])
         list_employee_info.insert(0, empid+1)
+        list_employee_info.append(0)
+        #line below converts an array of clock in info to JSON to be stored in the database
         list_employee_info.append(json.dumps([(0, 0), ]))
         employee_info = tuple(list_employee_info)
+        print(employee_info)
         self.cur.execute("""
-            INSERT INTO employees(employee_id, name, username, password, email, phone_number, clock_in_history)
-            VALUES(?, ?, ?, ?, ?, ?, ?);""", employee_info)
+            INSERT INTO employees(employee_id, name, username, password, email, phone_number, position, clock_in_history)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
         self.conn.commit()
         return(1)
 
@@ -112,14 +133,15 @@ class dbmgmt:
         try:
             sel_emp = list(sel_emp[0])
         except IndexError:
-            print("The username could not be found")
+            print("This username could not be found")
             return 0
 
         if not check_password_hash(sel_emp[3], login_info[1]):
-            print("the password could not be found")
+            print("This password could not be found")
             return 1
 
-        sel_emp[6] = json.loads(sel_emp[6])
+        #converting clock in history from JSON to an array
+        sel_emp[7] = json.loads(sel_emp[7])
         return sel_emp
 
 
@@ -132,7 +154,7 @@ class dbmgmt:
         except IndexError:
             print("The employee with that id could not be found")
             return 0
-        sel_emp[6] = json.loads(sel_emp[6])
+        sel_emp[7] = json.loads(sel_emp[7])
         return sel_emp
 
 
@@ -140,7 +162,9 @@ class dbmgmt:
     def update_employee_info(self, emp_info):
         # add section to ensure updated info doesnt override existing
         emp_info = list(emp_info)
-        emp_info[6] = json.dumps(emp_info[6])
+        emp_info[7] = json.dumps(emp_info[7])
+        
+        #adding empployee_id to the end of the list for the SQLite call at the end
         emp_info.append(emp_info[0])
 
         # The 14 lines below ensure that an employee will not be updated to have the same name as another
@@ -165,7 +189,7 @@ class dbmgmt:
 
         self.cur.execute("""
             UPDATE employees
-            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, clock_in_history = ?
+            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, clock_in_history = ? position = ?
             WHERE employee_id = ?""", emp_info)
         self.conn.commit()
 
@@ -213,7 +237,7 @@ class dbmgmt:
             print("Please enter a valid selection, either \'y\' or \'n\'")
 
 # -------------------section for manually managing the database below --------------------
-#conn = sqlite3.connect('capstone.db')
+#conn = sqlite3.connect('PaperlessTime.db')
 #cur = conn.cursor()
 
 #cur.execute("UPDATE employees SET employee_id = 0 WHERE username = \"temp\"")

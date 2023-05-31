@@ -35,11 +35,12 @@ class employee(UserMixin):
         self.password = employee_info[3]
         self.email = employee_info[4]
         self.phone_number = employee_info[5]
-        self.clock_in_history = employee_info[6]
+        self.position = employee_info[6]
+        self.clock_in_history = employee_info[7]
 
     def __str__(self):
         return f"{self.id}, {self.name}, {self.username}, {self.password},\
-                {self.email}, {self.phone_number}, {self.clock_in_history}"
+                {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}"
 
     def get_clock_tuple(self):
         return tuple([self.id, self.clock_in_history])
@@ -129,9 +130,14 @@ def sendemail(targetemail, msg):
 
     smtp.close()
 
+#seperate the schedule file into a different file for each year
+def seperateScheduleFile():
+    #add the stuff to do that here
+    return()   
+
 @login_manager.user_loader
 def load_user(user_id):
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     emp_info = db.id_pull_employee_info(user_id)
@@ -143,7 +149,7 @@ def load_user(user_id):
 @app.route("/add_employee", methods=['GET', 'POST'])
 def add_employee():
     # initializing db object
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     name = None
@@ -195,7 +201,7 @@ def index():
     username = None
     password = None
     # initializing db object
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     form = loginform()
@@ -246,7 +252,7 @@ def logout():
 @app.route("/clock_in")
 @login_required
 def clock_in():
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     clock_in_indicator = db.clock_in(current_user.get_clock_tuple())
@@ -263,7 +269,7 @@ def clock_in():
 @app.route("/clock_out")
 @login_required
 def clock_out():
-    conn = sqlite3.connect('capstone.db')
+    conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     clock_in_indicator = db.clock_out(current_user.get_clock_tuple())
@@ -288,10 +294,11 @@ def page_not_found(e):
 def page_not_found(e):
     return render_template("500.html"), 500
 
-# Main Run Loop
+# ----------Main Run Loop-------------------
 if __name__ == "__main__":
     from waitress import serve
     #uncomment the below line to run developer server
-    #app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="127.0.0.1", port=8080, debug=True)
+    
     #uncomment the below line to run deployment server
-    serve(app, host='0.0.0.0', port=8080)
+    #serve(app, host='0.0.0.0', port=8080)
