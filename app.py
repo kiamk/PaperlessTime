@@ -12,6 +12,7 @@ import secrets
 import smtplib
 import os
 import time
+import datetime
 
 # changing timezone for pythonanywhere comment out these two lines when not running local
 #os.environ["TZ"] = "America/New_York"
@@ -56,6 +57,10 @@ class loginform(FlaskForm):
     username = StringField('username', validators=[InputRequired()])
     password = PasswordField('password', validators=[InputRequired()])
     login = SubmitField("Login")
+
+#change the below to referencing a setup info document and keeping a 14 day counter based on that info
+#   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
+#           maybe this doc has a last pay period start entry so 14 days can just be counted from then if the program is turned off
 
 #returns the start of the pay period when called on the wednesday before payday
 def getpayprdstart():
@@ -249,6 +254,7 @@ def clock_in():
         flash("You forgot to clock out last shift please notify an administrator")
         return redirect(url_for("dashboard"))
     elif clock_in_indicator == 1:
+        flash("You have succesfully clocked-in! Have a great day!")
         return redirect(url_for("dashboard"))
     else:
         flash("System error! not clocked in please notify an administrator")
@@ -265,6 +271,7 @@ def clock_out():
         flash("You forgot to clock in this shift please notify an administrator")
         return redirect(url_for("dashboard"))
     elif clock_in_indicator == 1:
+        flash("You have succesfully clocked-out! Have a great day!")
         return redirect(url_for("dashboard"))
     else:
         flash("System error! not clocked out please notify an administrator")
@@ -283,4 +290,8 @@ def page_not_found(e):
 
 # Main Run Loop
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    from waitress import serve
+    #uncomment the below line to run developer server
+    #app.run(host="127.0.0.1", port=8080, debug=True)
+    #uncomment the below line to run deployment server
+    serve(app, host='0.0.0.0', port=8080)

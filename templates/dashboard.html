@@ -5,15 +5,40 @@
 
 {% block content %}
     <center>
-    {% for message in get_flashed_messages() %}
-        <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-    {% endfor %}
-        <h1> A schedule for the week will go here </h1>
+        {% for message in get_flashed_messages() %}
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+        {% endfor %}
+
+        <!-- employee calendar -->
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                var calendarEl = document.getElementById('calendar');
+                var calendar = new FullCalendar.Calendar(calendarEl, {
+                    initialView: 'timeGridWeek',
+                    headerToolbar: {
+                        left: 'prev,next',
+                        center: 'button',
+                        right: 'timeGridWeek,dayGridMonth' // user can switch between the two
+                    }
+                });
+
+                {% if true %}
+                calendar.addEvent({ // this object will be "parsed" into an Event Object
+                    title: 'The Title', // a property!
+                    start: '2023-05-30T13:50:00', // a property!
+                    end: '2023-05-30T14:50:00'
+                });
+                {% endif %}
+                calendar.render();
+            });
+        </script>
+
+        <div id='calendar'></div>
         <br/>
         <h1> A Chatroom for employees to discuss will go here </h1>
         <p>
