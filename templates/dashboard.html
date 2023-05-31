@@ -15,48 +15,11 @@
         {% endfor %}
 
         <!-- employee calendar -->
-        <!-- add employee button brings up a window with a dropdown of available employees and the open times for the next week(or a custom week)-->
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                var calendarEl = document.getElementById('calendar');
-                var calendar = new FullCalendar.Calendar(calendarEl, {
-                    initialView: 'timeGridWeek',
-                    headerToolbar: {
-                        left: 'prev,next',
-                        center: 'addEmployeeButton',
-                        right: 'timeGridWeek,dayGridMonth' // user can switch between the two
-                    },
-                    {% if true %}
-                        customButtons: {
-                            addEmployeeButton:{
-                                text: "Add Employee to Schedule",
-                                click: function(){
-                                    var name = prompt("Please enter the name of the employee you wish to schedule: ");
-                                    var date = prompt("Please enter the date to schedule someone on in YYYY-MM-DD format: ");
-                                    var startTime = prompt("Please enter the start time for their shift in 24hr HH:MM:SS format: ");
-                                    var endTime = prompt("Please enter the end time for their shift in 24hr HH:MM:SS format: ");
-                                    
-                                    var startDateTime = date + "T" + startTime;
-                                    var endDateTime = date + "T" + endTime;
-
-                                    calendar.addEvent({
-                                        title: name + " Working",
-                                        start: startDateTime,
-                                        end: endDateTime
-                                    })
-                                }
-                            }
-                        }
-                    {% endif %}
-                });
-
-                calendar.render();
-            });
-        </script>
-
-        <div id='calendar'></div>
-        <br/>
+        <div id = "calendar">
+            {% include 'calendar.html' %}
+        </div>
+        <div>
         <h1> A Chatroom for employees to discuss will go here </h1>
-        <p>
+        </div>
     </center>
 {% endblock %}

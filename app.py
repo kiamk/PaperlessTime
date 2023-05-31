@@ -230,12 +230,12 @@ def index():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html")
+    return render_template("dashboard.html", position = current_user.position)
 
 @app.route("/schedule")
 @login_required
 def schedule():
-    return render_template("notready.html")
+    return render_template("schedule.html", position = current_user.position)
 
 @app.route("/chatroom")
 @login_required

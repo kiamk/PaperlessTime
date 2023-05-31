@@ -240,6 +240,6 @@ class dbmgmt:
 #conn = sqlite3.connect('PaperlessTime.db')
 #cur = conn.cursor()
 
-#cur.execute("UPDATE employees SET employee_id = 0 WHERE username = \"temp\"")
+#cur.execute("UPDATE employees SET position = 2 WHERE employee_id = 1")
 #conn.commit()
 #db = dbmgmt(conn, cur)
