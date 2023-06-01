@@ -1,7 +1,7 @@
 #Kiam Kaiser
 #CS498
 #Professor Scott Spetka
-from flask import Flask, render_template, flash, redirect, url_for
+from flask import Flask, render_template, flash, request, redirect, url_for, jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField
 from wtforms.validators import InputRequired
@@ -10,6 +10,7 @@ import sqlite3
 from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
 import secrets
 import smtplib
+import json
 import os
 import time
 import datetime
@@ -130,10 +131,19 @@ def sendemail(targetemail, msg):
 
     smtp.close()
 
-#seperate the schedule file into a different file for each year
-def seperateScheduleFile():
-    #add the stuff to do that here
-    return()   
+#returns an array of the scedule for the current year or 0 if the file is empty
+def getSchedule():
+    today = datetime.datetime.now()
+    filename = today.strftime("%Y") + "Schedule.json"
+    try:
+        file = open("schedules/" + filename, 'r')
+    except:
+        file = open("schedules/" + filename, 'w')
+        file.close()
+        return(0)
+    print(schedule)
+    #print("the type is: " + str(type(schedule)))
+    return(schedule)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -226,11 +236,11 @@ def index():
                 return redirect(url_for('index'))
 
     return render_template("index.html", username = username, password = password, form = loginform())
-
+        
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", position = current_user.position)
+    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule())
 
 @app.route("/schedule")
 @login_required
