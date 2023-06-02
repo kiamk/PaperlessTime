@@ -1,4 +1,33 @@
-<!-- add employee button brings up a window with a dropdown of available employees and the open times for the next week(or a custom week)-->
+<div class="modal fade" id="scheduleEmployeeModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Schedule an employee</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form form action={{request.path}} + "/addToSchedule" method = 'post'>
+                    <h> Enter Employee Name: </h>
+                    <br/>
+                    {{ form.employeeName(class="form-control", placeholder="ex: John Doe")}}
+                    <br/>
+                    <h> Enter Employee Start Date and Time: </h>
+                    <br/>
+                    {{ form.start(class="form-control", placeholder="Enter Employee Start Date and Time")}}
+                    <br/>
+                    <h> Enter Employee End Date and Time: </h>
+                    <br/>
+                    {{ form.end(class="form-control", placeholder="Enter Employee End Date and Time")}}
+                    <br/>
+                    <button type="submit" class="btn btn-primary" data-dismiss="modal">Add to Schedule</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>  
     document.addEventListener('DOMContentLoaded', function () {
         var calendarEl = document.getElementById('calendar');
@@ -16,24 +45,22 @@
                     addEmployeeButton:{
                         text: "Add Employee to Schedule",
                         click: function(){
-                            var name = prompt("Please enter the name of the employee you wish to schedule: ");
-                            var date = prompt("Please enter the date to schedule someone on in YYYY-MM-DD format: ");
-                            var startTime = prompt("Please enter the start time for their shift in 24hr HH:MM:SS format: ");
-                            var endTime = prompt("Please enter the end time for their shift in 24hr HH:MM:SS format: ");
-                            
-                            var startDateTime = date + "T" + startTime;
-                            var endDateTime = date + "T" + endTime;
-
-                            calendar.addEvent({
-                                title: name + " Working",
-                                start: startDateTime,
-                                end: endDateTime
-                            })
+                            //Modal is in <head> of base.html
+                            $('#scheduleEmployeeModal').modal();
                         }
                     }
-                }
+                },
             {% endif %}
+            //events: {{getSchedule}}
+            events: [
+                { // this object will be "parsed" into an Event Object
+                title: 'The Title', // a property!
+                start: '2023-06-02', // a property!
+                end: '2023-06-02' // a property! ** see important note below about 'end' **
+                }
+            ]
         });
         calendar.render();
     });
+
 </script>

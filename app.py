@@ -3,7 +3,7 @@
 #Professor Scott Spetka
 from flask import Flask, render_template, flash, request, redirect, url_for, jsonify
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField
+from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField
 from wtforms.validators import InputRequired
 from dbmgmt import dbmgmt
 import sqlite3
@@ -59,6 +59,13 @@ class loginform(FlaskForm):
     username = StringField('username', validators=[InputRequired()])
     password = PasswordField('password', validators=[InputRequired()])
     login = SubmitField("Login")
+
+# create schedule employee form
+class scheduleEmployeeForm(FlaskForm):
+    employeeName = StringField('employee name', validators=[InputRequired()])
+    start = DateTimeLocalField('employee start date and time', validators=[InputRequired()])
+    end = DateTimeLocalField('employee end date and time', validators=[InputRequired()])
+    scheduleEmployee = SubmitField("Schedule Employee")
 
 #change the below to referencing a setup info document and keeping a 14 day counter based on that info
 #   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
@@ -141,9 +148,31 @@ def getSchedule():
         file = open("schedules/" + filename, 'w')
         file.close()
         return(0)
+    schedule = json.load(file)
     print(schedule)
     #print("the type is: " + str(type(schedule)))
     return(schedule)
+
+def setSchedule(newSchedule):
+    today = datetime.datetime.now()
+    filename = today.strftime("%Y") + "Schedule.json"
+    file = open("schedules/" + filename, 'w')
+    file.write(json.dumps(newSchedule))
+    file.close()
+    return(0)
+
+@app.route("/<basePage>/addToSchedule", methods=["GET", "POST"])
+def addToSchedule(basePage):
+    schedule = getSchedule()
+    form = scheduleEmployeeForm()
+    newScheduleEntry = []
+    
+    if form.validate_on_submit():
+        newScheduleEntry.append(form.name.data)
+        newScheduleEntry.append(form.start.data)
+        newScheduleEntry.append(form.end.data)
+    schedule.append(newScheduleEntry)
+    return redirect(url_for(basePage))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -240,7 +269,7 @@ def index():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule())
+    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule(), form=scheduleEmployeeForm())
 
 @app.route("/schedule")
 @login_required
