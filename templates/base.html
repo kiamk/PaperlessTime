@@ -15,6 +15,7 @@
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.7/index.global.min.js'></script>
 
     <!-- modal for adding an employee to the schedule(placed in <head> of base.html so the modal works in both dashboard and schedule)-->
+    {% include 'addToScheduleModal.html' %}
 
     <title>Paperless Time</title>
     <link rel="shortcut icon" href="{{ url_for('static', filename='paperlessicon.ico') }}">
