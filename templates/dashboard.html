@@ -2,7 +2,7 @@
      CS498
      Professor Scott Spetka -->
 {% extends 'base.html' %}
-<head> {% include calendar.html %} </head>
+<head> {% include addToScheduleModal.html %} </head>
 
 {% block content %}
     <center>
@@ -17,6 +17,7 @@
 
         <!-- employee calendar -->
         <div id = "calendar">
+            {% include calendar.html %}
         </div>
         <div>
             <h1> A Chatroom for employees to discuss will go here </h1>

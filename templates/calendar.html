@@ -1,33 +1,3 @@
-<div class="modal fade" id="scheduleEmployeeModal">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Schedule an employee</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form form action={{request.path}} + "/addToSchedule" method = 'post'>
-                    <h> Enter Employee Name: </h>
-                    <br/>
-                    {{ form.employeeName(class="form-control", placeholder="ex: John Doe")}}
-                    <br/>
-                    <h> Enter Employee Start Date and Time: </h>
-                    <br/>
-                    {{ form.start(class="form-control", placeholder="Enter Employee Start Date and Time")}}
-                    <br/>
-                    <h> Enter Employee End Date and Time: </h>
-                    <br/>
-                    {{ form.end(class="form-control", placeholder="Enter Employee End Date and Time")}}
-                    <br/>
-                    <button type="submit" class="btn btn-primary" data-dismiss="modal">Add to Schedule</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <script>  
     document.addEventListener('DOMContentLoaded', function () {
         var calendarEl = document.getElementById('calendar');
