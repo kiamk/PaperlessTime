@@ -274,7 +274,7 @@ def dashboard():
 @app.route("/schedule")
 @login_required
 def schedule():
-    return render_template("schedule.html", position = current_user.position)
+    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule(), form=scheduleEmployeeForm())
 
 @app.route("/chatroom")
 @login_required

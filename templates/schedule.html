@@ -1,6 +1,10 @@
 {%  extends 'base.html' %}
-<head>{% include calendar.html %}</head>
+<head>
+    <!-- addToScheduleModal needs to be in the head of the page using the modal-->
+    {% include 'addToScheduleModal.html' %}
+</head>
 
 {% block content %}
+    {% include calendar.html %}
     <div id=calendar></div>
 {% endblock %}
