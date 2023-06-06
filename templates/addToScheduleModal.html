@@ -8,7 +8,8 @@
                 </button>
             </div>
             <div class="modal-body">
-                <form form action={{request.path}} + "/addToSchedule" method = 'post'>
+                <form form action={{request.path}} method = 'post'>
+                    {{ form.csrf_token }}
                     <h> Enter Employee Name: </h>
                     <br/>
                     {{ form.employeeName(class="form-control", placeholder="ex: John Doe")}}
@@ -21,7 +22,7 @@
                     <br/>
                     {{ form.end(class="form-control", placeholder="Enter Employee End Date and Time")}}
                     <br/>
-                    <button type="submit" class="btn btn-primary" data-dismiss="modal">Add to Schedule</button>
+                    {{ form.scheduleEmployee(class="btn btn-primary", placeholder="Add to Schedule") }}
                 </form>
             </div>
         </div>

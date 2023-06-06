@@ -3,7 +3,7 @@
 #Professor Scott Spetka
 from flask import Flask, render_template, flash, request, redirect, url_for, jsonify
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField
+from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField
 from wtforms.validators import InputRequired
 from dbmgmt import dbmgmt
 import sqlite3
@@ -19,7 +19,7 @@ import datetime
 #os.environ["TZ"] = "America/New_York"
 #time.tzset()
 
-firstwedsbeforepay = "12/21/22"
+#create config file reader and a flag for if the config file is not found. when not found prompt the user to use the form assosiated with making one
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex()
@@ -62,9 +62,9 @@ class loginform(FlaskForm):
 
 # create schedule employee form
 class scheduleEmployeeForm(FlaskForm):
-    employeeName = StringField('employee name', validators=[InputRequired()])
-    start = DateTimeLocalField('employee start date and time', validators=[InputRequired()])
-    end = DateTimeLocalField('employee end date and time', validators=[InputRequired()])
+    employeeName = SelectField('employee name', coerce=int, validators=[InputRequired()])
+    start = DateTimeLocalField('employee start date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
+    end = DateTimeLocalField('employee end date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     scheduleEmployee = SubmitField("Schedule Employee")
 
 #change the below to referencing a setup info document and keeping a 14 day counter based on that info
@@ -138,46 +138,89 @@ def sendemail(targetemail, msg):
 
     smtp.close()
 
-#returns an array of the scedule for the current year or 0 if the file is empty
+#returns an array of the schedule events for the current year or creates a new file if one has not been made yet
 def getSchedule():
     today = datetime.datetime.now()
     filename = today.strftime("%Y") + "Schedule.json"
-    #try:
-     #   file = open("schedules/" + filename, 'r')
-    ##   file = open("schedules/" + filename, 'w')
-      #  file.close()
-       # return(0)
-    print("first open ")
-    print(open("schedules/" + filename, 'r'))
     
-    file = open("schedules/" + filename, 'r')
+    #if the file does not exist create a new empty file
+    try:
+        file = open("schedules/" + filename, 'r')
+    except:
+        file = open("schedules/" + filename, 'w')
+        file.close()
+        return
+    
+    #if the file is empty set scedule to empty
+    try:
+        schedule = json.load(file)
+    except:
+        schedule = []
         
-    #schedule = json.load(file)
-    #print("the type is: " + str(type(schedule)))
-    schedule = [{"test"}, {"test"}]
-    print("second open ")
-    print(file)
     file.close()
     return(schedule)
 
-def setSchedule():
+#returns a string of the schedule where ' are replaced with " so the formatting is correct to be sent to the calendar
+def getScheduleStr():
     today = datetime.datetime.now()
     filename = today.strftime("%Y") + "Schedule.json"
-    file = open("schedules/" + filename, 'w')
-    file.write(json.dumps(getSchedule()))
+    
+    #if the file does not exist create a new empty file
+    try:
+        file = open("schedules/" + filename, 'r')
+    except:
+        file = open("schedules/" + filename, 'w')
+        file.close()
+        return
+    
+    #if the file is empty set scedule to empty
+    try:
+        schedule = json.load(file)
+    except:
+        schedule = []
     file.close()
-    return(0)
+    scheduleStr = json.dumps(schedule)
+    #replacing python single quotes with double
+    scheduleStr = scheduleStr.replace("\'", "\"")
+    return(scheduleStr)
+
+
+# add error handeling so that the schedule is maintained in the event of an error
+def setSchedule(newSchedule):
+    today = datetime.datetime.now()
+    filename = today.strftime("%Y") + "Schedule.json"
+    
+    #the try loop below backs up the schedule before opening the current schedule in w mode as a protection against the schedule being lost
+    try:
+        file = open("schedules/" + filename, 'r')
+        oldSchedule = json.load(file)
+        file.close()
+        file = open("schedules/scheduleBackup", 'w')
+        json.dump(oldSchedule, file)
+        file.close()
+    except:
+        file = open("schedules/" + filename, 'w')
+        file.close()
+        
+    file = open("schedules/" + filename, 'w')
+    json.dump(newSchedule, file)
+    file.close()
 
 def addToSchedule():
     schedule = getSchedule()
     form = scheduleEmployeeForm()
-    newScheduleEntry = []
+    newScheduleEntry = {"title": "", "start": "", "end": ""}
     
     if form.validate_on_submit():
-        newScheduleEntry.append(form.name.data)
-        newScheduleEntry.append(form.start.data)
-        newScheduleEntry.append(form.end.data)
-    schedule.append(newScheduleEntry)
+        newScheduleEntry["title"] = form.employeeName.data
+        newScheduleEntry["start"] = str(form.start.data)
+        newScheduleEntry["end"] = str(form.end.data)
+        print(newScheduleEntry)
+        form = scheduleEmployeeForm(formdata = None)
+    if (newScheduleEntry):
+        schedule.append(newScheduleEntry)
+    
+    setSchedule(schedule)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -271,17 +314,33 @@ def index():
 
     return render_template("index.html", username = username, password = password, form = loginform())
         
-@app.route("/dashboard")
+@app.route("/dashboard", methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    addToSchedule()
-    setSchedule()
-    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule(), form=scheduleEmployeeForm())
+    conn = sqlite3.connect('PaperlessTime.db')
+    cur = conn.cursor()
+    db = dbmgmt(conn, cur)
+    #creating a schedule Json if there isnt one yet
+    getSchedule()
+    outForm = scheduleEmployeeForm()
+    outForm.employeeName.choices = db.pull_employee_list()
+    #ensuring that the form does not resubmit on refresh
+    if outForm.validate_on_submit():
+        addToSchedule()
+        return redirect(url_for('dashboard'))
+    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=outForm)
 
-@app.route("/schedule")
+@app.route("/schedule", methods = ["GET", "POST"])
 @login_required
 def schedule():
-    return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule(), form=scheduleEmployeeForm())
+    #creating a schedule Json if there isnt one yet
+    getSchedule()
+    form = scheduleEmployeeForm()
+    #ensuring that the form does not resubmit on refresh
+    if form.validate_on_submit():
+        addToSchedule()
+        return redirect(url_for('schedule'))
+    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=scheduleEmployeeForm(formdata = None))
 
 @app.route("/chatroom")
 @login_required

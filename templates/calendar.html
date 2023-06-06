@@ -1,3 +1,4 @@
+<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
 <script>  
     document.addEventListener('DOMContentLoaded', function () {
         var calendarEl = document.getElementById('calendar');
@@ -21,7 +22,8 @@
                     }
                 },
             {% endif %}
-            //events: {{getSchedule}}
+            //the below jquery parses the string into an array of objects and replaces all is to repace html encoded &#34; characters with the proper " character
+            events: jQuery.parseJSON("{{getScheduleStr}}".replaceAll("&#34;", '\"'))
             //events: 
         });
         calendar.render();

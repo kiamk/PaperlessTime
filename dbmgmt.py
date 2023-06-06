@@ -125,6 +125,12 @@ class dbmgmt:
         self.conn.commit()
         return(1)
 
+    # pulls a list of employee names in the form of a tuple
+    def pull_employee_list(self):
+        self.cur.execute("SELECT name FROM employees")
+        sel_emp = self.cur.fetchall()
+        
+        return sel_emp
 
     # pulls employee info and returns that info in the form of a tuple given login info as a tuple
     def pull_employee_info(self, login_info):
