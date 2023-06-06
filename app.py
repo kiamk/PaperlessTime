@@ -142,27 +142,33 @@ def sendemail(targetemail, msg):
 def getSchedule():
     today = datetime.datetime.now()
     filename = today.strftime("%Y") + "Schedule.json"
-    try:
-        file = open("schedules/" + filename, 'r')
-    except:
-        file = open("schedules/" + filename, 'w')
-        file.close()
-        return(0)
-    schedule = json.load(file)
-    print(schedule)
+    #try:
+     #   file = open("schedules/" + filename, 'r')
+    ##   file = open("schedules/" + filename, 'w')
+      #  file.close()
+       # return(0)
+    print("first open ")
+    print(open("schedules/" + filename, 'r'))
+    
+    file = open("schedules/" + filename, 'r')
+        
+    #schedule = json.load(file)
     #print("the type is: " + str(type(schedule)))
+    schedule = [{"test"}, {"test"}]
+    print("second open ")
+    print(file)
+    file.close()
     return(schedule)
 
-def setSchedule(newSchedule):
+def setSchedule():
     today = datetime.datetime.now()
     filename = today.strftime("%Y") + "Schedule.json"
     file = open("schedules/" + filename, 'w')
-    file.write(json.dumps(newSchedule))
+    file.write(json.dumps(getSchedule()))
     file.close()
     return(0)
 
-@app.route("/<basePage>/addToSchedule", methods=["GET", "POST"])
-def addToSchedule(basePage):
+def addToSchedule():
     schedule = getSchedule()
     form = scheduleEmployeeForm()
     newScheduleEntry = []
@@ -172,7 +178,6 @@ def addToSchedule(basePage):
         newScheduleEntry.append(form.start.data)
         newScheduleEntry.append(form.end.data)
     schedule.append(newScheduleEntry)
-    return redirect(url_for(basePage))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -269,6 +274,8 @@ def index():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    addToSchedule()
+    setSchedule()
     return render_template("dashboard.html", position = current_user.position, getSchedule = getSchedule(), form=scheduleEmployeeForm())
 
 @app.route("/schedule")
