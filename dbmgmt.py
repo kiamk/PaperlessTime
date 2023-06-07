@@ -227,7 +227,7 @@ class dbmgmt:
         self.conn.commit()
         return 1
 
-
+    #delete an employee given the employee name
     def delete_employee(self, emp_info):
         try:
             check = input("Are you sure you want to delete " + str(emp_info[1]) + "?(y/n) ")

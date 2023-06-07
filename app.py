@@ -27,6 +27,18 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "index"
 
+#returns a list of employee name strings which is pulled from the database
+def getEmployeeList():
+    conn = sqlite3.connect('PaperlessTime.db')
+    cur = conn.cursor()
+    db = dbmgmt(conn, cur)
+    employeeList = list(db.pull_employee_list())
+    for x in range(len(employeeList)):
+        employeeList[x] = employeeList[x][0]
+    conn.close()
+    return(employeeList)
+
+
 # create Employee class
 class employee(UserMixin):
     def __init__(self, employee_info):
@@ -62,7 +74,7 @@ class loginform(FlaskForm):
 
 # create schedule employee form
 class scheduleEmployeeForm(FlaskForm):
-    employeeName = SelectField('employee name', coerce=int, validators=[InputRequired()])
+    employeeName = SelectField('employee name', validators=[InputRequired()])
     start = DateTimeLocalField('employee start date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     end = DateTimeLocalField('employee end date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     scheduleEmployee = SubmitField("Schedule Employee")
@@ -184,9 +196,20 @@ def getScheduleStr():
     scheduleStr = scheduleStr.replace("\'", "\"")
     return(scheduleStr)
 
-
-# add error handeling so that the schedule is maintained in the event of an error
-def setSchedule(newSchedule):
+def addToSchedule():
+    schedule = getSchedule()
+    form = scheduleEmployeeForm()
+    newScheduleEntry = {"title": "", "start": "", "end": ""}
+    
+    if form.validate_on_submit():
+        newScheduleEntry["title"] = form.employeeName.data
+        newScheduleEntry["start"] = str(form.start.data)
+        newScheduleEntry["end"] = str(form.end.data)
+        print(newScheduleEntry)
+        form = scheduleEmployeeForm(formdata = None)
+    if (newScheduleEntry):
+        schedule.append(newScheduleEntry)
+    
     today = datetime.datetime.now()
     filename = today.strftime("%Y") + "Schedule.json"
     
@@ -203,24 +226,8 @@ def setSchedule(newSchedule):
         file.close()
         
     file = open("schedules/" + filename, 'w')
-    json.dump(newSchedule, file)
+    json.dump(schedule, file)
     file.close()
-
-def addToSchedule():
-    schedule = getSchedule()
-    form = scheduleEmployeeForm()
-    newScheduleEntry = {"title": "", "start": "", "end": ""}
-    
-    if form.validate_on_submit():
-        newScheduleEntry["title"] = form.employeeName.data
-        newScheduleEntry["start"] = str(form.start.data)
-        newScheduleEntry["end"] = str(form.end.data)
-        print(newScheduleEntry)
-        form = scheduleEmployeeForm(formdata = None)
-    if (newScheduleEntry):
-        schedule.append(newScheduleEntry)
-    
-    setSchedule(schedule)
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -230,6 +237,7 @@ def load_user(user_id):
     emp_info = db.id_pull_employee_info(user_id)
     if emp_info == 0:
         return None
+    conn.close()
     return employee(emp_info)
 
 # add_employee page
@@ -272,6 +280,7 @@ def add_employee():
                 flash("An employee with this username already exists!")
                 return redirect(url_for('add_employee'))
         new_emp_info = None
+        conn.close()
 
 
     return render_template("add_employee.html",
@@ -311,24 +320,21 @@ def index():
             elif db_login_indicator == 1:
                 flash("The password you entered was incorrect!")
                 return redirect(url_for('index'))
-
+    conn.close()
     return render_template("index.html", username = username, password = password, form = loginform())
         
 @app.route("/dashboard", methods=['GET', 'POST'])
 @login_required
 def dashboard():
-    conn = sqlite3.connect('PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
     #creating a schedule Json if there isnt one yet
     getSchedule()
-    outForm = scheduleEmployeeForm()
-    outForm.employeeName.choices = db.pull_employee_list()
+    form = scheduleEmployeeForm()
+    form.employeeName.choices = getEmployeeList()
     #ensuring that the form does not resubmit on refresh
-    if outForm.validate_on_submit():
+    if form.validate_on_submit():
         addToSchedule()
         return redirect(url_for('dashboard'))
-    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=outForm)
+    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
 @app.route("/schedule", methods = ["GET", "POST"])
 @login_required
@@ -336,11 +342,12 @@ def schedule():
     #creating a schedule Json if there isnt one yet
     getSchedule()
     form = scheduleEmployeeForm()
+    form.employeeName.choices = getEmployeeList()
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit():
         addToSchedule()
         return redirect(url_for('schedule'))
-    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=scheduleEmployeeForm(formdata = None))
+    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
 @app.route("/chatroom")
 @login_required
@@ -361,6 +368,7 @@ def clock_in():
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     clock_in_indicator = db.clock_in(current_user.get_clock_tuple())
+    conn.close()
     if clock_in_indicator == 0:
         flash("You forgot to clock out last shift please notify an administrator")
         return redirect(url_for("dashboard"))
@@ -378,6 +386,7 @@ def clock_out():
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     clock_in_indicator = db.clock_out(current_user.get_clock_tuple())
+    conn.close()
     if clock_in_indicator == 0:
         flash("You forgot to clock in this shift please notify an administrator")
         return redirect(url_for("dashboard"))
