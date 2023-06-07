@@ -14,6 +14,8 @@ import json
 import os
 import time
 import datetime
+import requests
+import random
 
 # changing timezone for pythonanywhere comment out these two lines when not running local
 #os.environ["TZ"] = "America/New_York"
@@ -78,6 +80,13 @@ class scheduleEmployeeForm(FlaskForm):
     start = DateTimeLocalField('employee start date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     end = DateTimeLocalField('employee end date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     scheduleEmployee = SubmitField("Schedule Employee")
+
+def send_message():
+  resp = requests.post('http://textbelt.com/text', {
+    'phone': '5189155775',
+    'message': 'user added',
+    'key': 'textbelt'
+  })
 
 #change the below to referencing a setup info document and keeping a 14 day counter based on that info
 #   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
@@ -199,14 +208,39 @@ def getScheduleStr():
 def addToSchedule():
     schedule = getSchedule()
     form = scheduleEmployeeForm()
-    newScheduleEntry = {"title": "", "start": "", "end": ""}
+    form.employeeName.choices = getEmployeeList()
+    newScheduleEntry = {"title": "", "start": "", "end": "", "color": ""}
     
     if form.validate_on_submit():
         newScheduleEntry["title"] = form.employeeName.data
         newScheduleEntry["start"] = str(form.start.data)
         newScheduleEntry["end"] = str(form.end.data)
-        print(newScheduleEntry)
+        
+        conn = sqlite3.connect('PaperlessTime.db')
+        cur = conn.cursor()
+        db = dbmgmt(conn, cur)
+        id = db.name_pull_employee_info(str(form.employeeName.data))[0]
+        if id % 3 == 0:
+            newScheduleEntry["color"] = "rgb(255," + str(9*id) + ", " + str(18*id) + ")"
+        elif id % 3 == 1:
+            newScheduleEntry["color"] = "rgb(" + str(9*id) + ",255, " + str(18*id) + ")"
+        elif id % 3 == 2:
+            newScheduleEntry["color"] = "rgb(" + str(9*id) + ", " + str(18*id) + ", " + "255)"
+        
+        
+        if id * 15 > 240:
+            if id * 15 > 480:
+                if id * 15 > 720:
+                    newScheduleEntry["color"] = "rgb(" + str(random.randint(25, 230)) + "," + str(random.randint(25, 230)) + "," + str(random.randint(25, 230)) + ")"
+                else:
+                   newScheduleEntry["color"] = "rgb(" + str(255-(id*15)) + ",15, 15)" 
+            else:
+               newScheduleEntry["color"] = "rgb(240," + str(255-(id*15)) + ", 15)" 
+        else:
+            newScheduleEntry["color"] = "rgb(240,240," + str(255-(id*15)) + ")"
+        
         form = scheduleEmployeeForm(formdata = None)
+        form.employeeName.choices = getEmployeeList()
     if (newScheduleEntry):
         schedule.append(newScheduleEntry)
     
@@ -352,7 +386,15 @@ def schedule():
 @app.route("/chatroom")
 @login_required
 def chatroom():
-    return render_template("notready.html")
+    idList = []
+    for id in range(100):
+        if id % 3 == 0:
+            idList.append("rgb(255," + str(9*id) + ", " + str(18*id) + ")")
+        elif id % 3 == 1:
+            idList.append("rgb(" + str(9*id) + ",255, " + str(18*id) + ")")
+        elif id % 3 == 2:
+            idList.append("rgb(" + str(9*id) + ", " + str(18*id) + ", " + "255)")
+    return render_template("chatroom.html", idList = json.dumps(idList))
 
 @app.route("/logout")
 @login_required

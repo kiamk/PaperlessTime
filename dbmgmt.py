@@ -162,6 +162,18 @@ class dbmgmt:
             return 0
         sel_emp[7] = json.loads(sel_emp[7])
         return sel_emp
+    
+    # pulls employee info and returns that info in the form of a tuple given employee name
+    def name_pull_employee_info(self, given_name):
+        self.cur.execute("SELECT * FROM employees WHERE name = " + "\'" + given_name + "\'")
+        sel_emp = self.cur.fetchall()
+        try:
+            sel_emp = list(sel_emp[0])
+        except IndexError:
+            print("The employee with that name could not be found")
+            return 0
+        sel_emp[7] = json.loads(sel_emp[7])
+        return sel_emp
 
 
     # updates the entire employee row given a tuple with contains all of an employees info
@@ -249,3 +261,4 @@ class dbmgmt:
 #cur.execute("UPDATE employees SET position = 2 WHERE employee_id = 1")
 #conn.commit()
 #db = dbmgmt(conn, cur)
+      
