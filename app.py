@@ -29,6 +29,13 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "index"
 
+carriers = {
+    "att": "@mms.att.net",
+    "tmobile": "@tmomail.net",
+    "verizon": "@vtext.com",
+    "sprint": "@messaging.sprintpcs.com"
+}
+
 #returns a list of employee name strings which is pulled from the database
 def getEmployeeNameList():
     conn = sqlite3.connect('PaperlessTime.db')
@@ -98,12 +105,15 @@ class confirmForm(FlaskForm):
     confirm = StringField('Type \"yes\" to confirm', validators=[InputRequired()])
     submit = SubmitField("Submit")
 
-def send_message():
-  resp = requests.post('http://textbelt.com/text', {
-    'phone': '5189155775',
-    'message': 'user added',
-    'key': 'textbelt'
-  })
+def send_message(phone_number, carrier, message):
+    recipient = phone_number + carriers[carrier]
+    auth = ("kkaisercapstone@gmail.com", "zdczmecfkrwfiwnn")
+ 
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.starttls()
+    server.login(auth[0], auth[1])
+ 
+    server.sendmail(auth[0], recipient, message)
 
 #change the below to referencing a setup info document and keeping a 14 day counter based on that info
 #   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
@@ -413,6 +423,7 @@ def index():
 def dashboard():
     #creating a schedule Json if there isnt one yet
     getSchedule()
+    #send_message("5189155775", "att", "test message")
     form = scheduleEmployeeForm()
     form.employeeName.choices = getEmployeeNameList()
     #ensuring that the form does not resubmit on refresh
@@ -495,6 +506,7 @@ def clock_out():
 @app.route("/settings", methods=['GET', 'POST'])
 @login_required
 def settings():
+    #add seperate settings page for managers and employees to do things like turn off sms
     conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
