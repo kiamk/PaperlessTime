@@ -122,7 +122,6 @@ class dbmgmt:
         list_employee_info.append(json.dumps([(0, 0), ]))
         list_employee_info.append(1)
         employee_info = tuple(list_employee_info)
-        print(employee_info)
         self.cur.execute("""
             INSERT INTO employees(employee_id, name, username, password, email, phone_number, position, clock_in_history, smsOptIn)
             VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
@@ -130,7 +129,7 @@ class dbmgmt:
         return(1)
 
     # pulls a list of employee names in the form of a tuple
-    def pull_employee_list(self):
+    def pull_employee_name_list(self):
         self.cur.execute("SELECT name FROM employees")
         sel_emp = self.cur.fetchall()
         
@@ -245,18 +244,8 @@ class dbmgmt:
 
     #delete an employee given the employee name
     def delete_employee(self, emp_info):
-        try:
-            check = input("Are you sure you want to delete " + str(emp_info[1]) + "?(y/n) ")
-        except TypeError:
-            print("An empty employee was given as input")
-            return
-        if check.lower() == "y":
-            self.cur.execute("DELETE FROM employees WHERE employee_id = ?", (emp_info[0], ))
-            self.conn.commit()
-        elif check.lower() == "n":
-            print("okay the employee will not be deleted")
-        else:
-            print("Please enter a valid selection, either \'y\' or \'n\'")
+        self.cur.execute("DELETE FROM employees WHERE employee_id = ?", (emp_info[0], ))
+        self.conn.commit()
 
 # -------------------section for manually managing the database below --------------------
 #conn = sqlite3.connect('PaperlessTime.db')

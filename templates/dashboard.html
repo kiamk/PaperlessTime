@@ -10,15 +10,6 @@
 
 {% block content %}
     <center>
-        {% for message in get_flashed_messages() %}
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        {% endfor %}
-
         <!-- employee calendar -->
         <div id = "calendar">
             {% include 'calendar.html' %}

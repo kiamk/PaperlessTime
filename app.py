@@ -3,7 +3,7 @@
 #Professor Scott Spetka
 from flask import Flask, render_template, flash, request, redirect, url_for, jsonify
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField
+from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField, IntegerField, DateField
 from wtforms.validators import InputRequired
 from dbmgmt import dbmgmt
 import sqlite3
@@ -30,14 +30,15 @@ login_manager.init_app(app)
 login_manager.login_view = "index"
 
 #returns a list of employee name strings which is pulled from the database
-def getEmployeeList():
+def getEmployeeNameList():
     conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
-    employeeList = list(db.pull_employee_list())
+    employeeList = list(db.pull_employee_name_list())
     for x in range(len(employeeList)):
         employeeList[x] = employeeList[x][0]
     conn.close()
+    employeeList.insert(0, 'Select an Employee')
     return(employeeList)
 
 
@@ -66,7 +67,7 @@ class newempform(FlaskForm):
     username = StringField('username', validators=[InputRequired()])
     password = PasswordField('password', validators=[InputRequired()])
     email = StringField('email', validators=[InputRequired()])
-    phone_number = StringField('phone number (ex: 5189151238)', validators=[InputRequired()])
+    phone_number = StringField('phone number (ex: 5556667777)', validators=[InputRequired()])
     submit = SubmitField("Submit")
 
 # create login form
@@ -79,8 +80,23 @@ class loginform(FlaskForm):
 class scheduleEmployeeForm(FlaskForm):
     employeeName = SelectField('employee name', validators=[InputRequired()])
     start = DateTimeLocalField('employee start date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
+    #add handeler for if the end date is before the start date
     end = DateTimeLocalField('employee end date and time', validators=[InputRequired()], format='%Y-%m-%dT%H:%M')
     scheduleEmployee = SubmitField("Schedule Employee")
+    
+# create settings form
+class settingsForm(FlaskForm):
+    payPeriodLength = IntegerField('Please enter the number of days long the pay period is ex:1')
+    daysAfterPayPeriod = IntegerField('Please enter the number of days ex: 1')
+    payPeriodStart = DateField('start of pay period')
+    employeeName = SelectField('employee name')
+    employeePosition = SelectField('employee permission', choices=[('', 'Select Employee Position'), ('0', 'Employee'), ('1', 'Manager')])
+    removeEmployee = SelectField('employee to be removed')
+    submit = SubmitField("Submit")
+    
+class confirmForm(FlaskForm):
+    confirm = StringField('Type \"yes\" to confirm', validators=[InputRequired()])
+    submit = SubmitField("Submit")
 
 def send_message():
   resp = requests.post('http://textbelt.com/text', {
@@ -209,7 +225,7 @@ def getScheduleStr():
 def addToSchedule():
     schedule = getSchedule()
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeList()
+    form.employeeName.choices = getEmployeeNameList()
     newScheduleEntry = {"title": "", "start": "", "end": "", "color": ""}
     
     if form.validate_on_submit():
@@ -274,7 +290,7 @@ def addToSchedule():
             newScheduleEntry["color"] = "rgb(" + str(a) + "," + str(b) + ", " + str(c) + ")"
         
         form = scheduleEmployeeForm(formdata = None)
-        form.employeeName.choices = getEmployeeList()
+        form.employeeName.choices = getEmployeeNameList()
     if (newScheduleEntry):
         schedule.append(newScheduleEntry)
     
@@ -362,6 +378,7 @@ def add_employee():
 # home page
 @app.route("/", methods=['GET', 'POST'])
 def index():
+    
     username = None
     password = None
     # initializing db object
@@ -397,11 +414,12 @@ def dashboard():
     #creating a schedule Json if there isnt one yet
     getSchedule()
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeList()
+    form.employeeName.choices = getEmployeeNameList()
     #ensuring that the form does not resubmit on refresh
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
         addToSchedule()
         return redirect(url_for('dashboard'))
+    elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
 @app.route("/schedule", methods = ["GET", "POST"])
@@ -410,11 +428,12 @@ def schedule():
     #creating a schedule Json if there isnt one yet
     getSchedule()
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeList()
+    form.employeeName.choices = getEmployeeNameList()
     #ensuring that the form does not resubmit on refresh
-    if form.validate_on_submit():
+    if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
         addToSchedule()
         return redirect(url_for('schedule'))
+    elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
 @app.route("/chatroom")
@@ -473,10 +492,51 @@ def clock_out():
         flash("System error! not clocked out please notify an administrator")
         return redirect(url_for("index"))
     
-@app.route("/config")
+@app.route("/settings", methods=['GET', 'POST'])
 @login_required
-def config():
-    return render_template("notready.html")
+def settings():
+    conn = sqlite3.connect('PaperlessTime.db')
+    cur = conn.cursor()
+    db = dbmgmt(conn, cur)
+    checkForm = confirmForm()
+    form = settingsForm()
+    form.employeeName.choices = getEmployeeNameList()
+    form.removeEmployee.choices = getEmployeeNameList()
+    if request.method == 'POST':
+        print("test")
+        try:
+            file = open("companyConfigs/" + "COMPANYNAME", 'r')
+            configInfo = json.load(file)
+            file.close()
+            file = open("companyConfigs/" + "COMPANYNAME", 'w')
+        except:
+            file = open("companyConfigs/" + "COMPANYNAME", 'w')
+            configInfo = {"payPeriodLength": "", "daysAfterPayPeriod": "", "payPeriodStart": "",}
+        if form.payPeriodLength.data:
+            configInfo["payPeriodLength"] = form.payPeriodLength.data
+        if form.daysAfterPayPeriod.data:
+            configInfo["daysAfterPayPeriod"] = form.daysAfterPayPeriod.data
+        if form.payPeriodStart.data:
+            configInfo["payPeriodStart"] = str(form.payPeriodStart.data)
+        if form.employeeName.data != 'Select an Employee':
+            if form.employeePosition.data:
+                current_user.position = form.employeePosition.data
+                db.update_employee_info()
+            else:
+                flash("please enter the new position for the employee")
+        if form.removeEmployee.data != 'Select an Employee':
+            modalActive = 1
+            employeeToRemove = db.name_pull_employee_info(form.removeEmployee.data)
+            db.delete_employee(employeeToRemove)
+        
+        json.dump(configInfo, file)
+        file.close()
+        form = settingsForm(formdata = None)
+        flash("Settings Updated!")
+        
+    
+    conn.close()
+    return render_template("settings.html", form = form)
 
 # ----------error pages--------------------
 # invalid url
@@ -493,7 +553,10 @@ def page_not_found(e):
 if __name__ == "__main__":
     from waitress import serve
     #uncomment the below line to run developer server
-    app.run(host="127.0.0.1", port=8080, debug=True)
+    app.run(host="0.0.0.0", port=8080, debug=True)
     
     #uncomment the below line to run deployment server
     #serve(app, host='0.0.0.0', port=8080)
+    
+    #potentially make it so that accessing kaiserk.pythonanywhere.com/mattressxpressny would go to that company app by loading a config file
+    #that url variable would then stay as part of the url with request.path

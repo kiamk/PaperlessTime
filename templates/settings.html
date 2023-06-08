@@ -1,0 +1,42 @@
+{%  extends 'base.html' %}
+
+{% block content %}
+    <div class="container p-4 bg-light rounded">
+        <!-- 
+            allow buisinesses to submit their logo for the top right
+            change the background color
+            change the navbar color
+            input how many days after the pay period is over they want to be notified
+            input how long the pay period is
+            set users as employees or managers -->
+        <form form action={{url_for('settings')}} method = 'post'>
+            <center><font size="+4"><b> Settings </b></font></center>
+            <br/>
+            <h> Enter the Length in days of each pay period at your company: </h>
+            <br/>
+            {{ form.payPeriodLength(class="form-control", placeholder="ex: \"14\"")}}
+            <br/>
+            <h> Enter the number of days after the pay period ends you would like to be notified: </h><br/>
+            <p> Ex: if saturday is the last day of the pay period and you would like to be notified on wednesday enter "4" </p>
+            {{ form.daysAfterPayPeriod(class="form-control", placeholder="ex: \"4\"")}}
+            <br/>
+            <h> Select the first day of the last pay period at your company: </h>
+            <br/>
+            {{ form.payPeriodStart(class="form-control")}}
+            <br/>
+            <h> Select the name and position of the employee you would like to change: </h>
+            <br/>
+            {{ form.employeeName(class="form-control")}}
+            <div class="mt-1">{{ form.employeePosition(class="form-control")}}</div>
+            <br/>
+            <h> Select the name of the employee you would like to remove: </h>
+            <br/>
+            {{ form.removeEmployee(class="form-control")}}
+            <br/>
+            <br/>
+            <b>Be sure that all of the above entries are correct, once submit is pressed the actions cannot be undone</b>
+            <!-- add confirm modal for submit -->
+            {{ form.submit(class="btn btn-primary", placeholder="Submit") }}
+        </form>
+    </div>
+{% endblock %}
