@@ -1,0 +1,11 @@
+<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
+    <script>
+        var idList = jQuery.parseJSON("{{idList}}".replaceAll("&#34;", '\"'))
+        
+        for (let i = 0; i < 500; i++){
+            const btn = document.createElement("BUTTON");
+            btn.innerHTML = idList[i];
+            btn.style.backgroundColor = idList[i]
+            document.body.appendChild(btn);
+        }
+    </script>

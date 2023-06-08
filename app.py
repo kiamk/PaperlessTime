@@ -52,6 +52,7 @@ class employee(UserMixin):
         self.phone_number = employee_info[5]
         self.position = employee_info[6]
         self.clock_in_history = employee_info[7]
+        self.smsOptIn = employee_info[8]
 
     def __str__(self):
         return f"{self.id}, {self.name}, {self.username}, {self.password},\
@@ -220,24 +221,57 @@ def addToSchedule():
         cur = conn.cursor()
         db = dbmgmt(conn, cur)
         id = db.name_pull_employee_info(str(form.employeeName.data))[0]
+        #the if statement below creates seemingly random colors based on the employee id with little repitiion
+        #also ensures that if the event icon is too bright that black text is used
+        id = id + 1
         if id % 3 == 0:
-            newScheduleEntry["color"] = "rgb(255," + str(9*id) + ", " + str(18*id) + ")"
+            a = int(255/id)
+            b = 0+(id*id*9)%200+55
+            c = 0+(id*10)%255
+            if a > 199 or b > 199 or c > 199:
+                newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif a > 149:
+                if b > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif b > 149:
+                if a > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif c > 149:
+                if a > 149 or b > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            newScheduleEntry["color"] = "rgb(" + str(a) + "," + str(b) + ", " + str(c) + ")"
         elif id % 3 == 1:
-            newScheduleEntry["color"] = "rgb(" + str(9*id) + ",255, " + str(18*id) + ")"
+            b = int(255/id)
+            a = 0+(id*id*9)%200+55
+            c = 0+(id*10)%255
+            if a > 199 or b > 199 or c > 199:
+                newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif a > 149:
+                if b > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif b > 149:
+                if a > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif c > 149:
+                if a > 149 or b > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            newScheduleEntry["color"] = "rgb(" + str(a) + "," + str(b) + ", " + str(c) + ")"
         elif id % 3 == 2:
-            newScheduleEntry["color"] = "rgb(" + str(9*id) + ", " + str(18*id) + ", " + "255)"
-        
-        
-        if id * 15 > 240:
-            if id * 15 > 480:
-                if id * 15 > 720:
-                    newScheduleEntry["color"] = "rgb(" + str(random.randint(25, 230)) + "," + str(random.randint(25, 230)) + "," + str(random.randint(25, 230)) + ")"
-                else:
-                   newScheduleEntry["color"] = "rgb(" + str(255-(id*15)) + ",15, 15)" 
-            else:
-               newScheduleEntry["color"] = "rgb(240," + str(255-(id*15)) + ", 15)" 
-        else:
-            newScheduleEntry["color"] = "rgb(240,240," + str(255-(id*15)) + ")"
+            c = int(255/id)
+            b = 0+(id*id*9)%200+55
+            a = 0+(id*10)%255
+            if a > 199 or b > 199 or c > 199:
+                newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif a > 149:
+                if b > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif b > 149:
+                if a > 149 or c > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            elif c > 149:
+                if a > 149 or b > 149:
+                    newScheduleEntry["textColor"] = "rgb(0,0,0)"
+            newScheduleEntry["color"] = "rgb(" + str(a) + "," + str(b) + ", " + str(c) + ")"
         
         form = scheduleEmployeeForm(formdata = None)
         form.employeeName.choices = getEmployeeList()
@@ -387,13 +421,13 @@ def schedule():
 @login_required
 def chatroom():
     idList = []
-    for id in range(100):
+    for id in range(2, 500):
         if id % 3 == 0:
-            idList.append("rgb(255," + str(9*id) + ", " + str(18*id) + ")")
+            idList.append("rgb(" + str(int(255/id)) + "," + str(0+(id*id*9)%200+55) + ", " + str(0+(id*10)%255) + ")")
         elif id % 3 == 1:
-            idList.append("rgb(" + str(9*id) + ",255, " + str(18*id) + ")")
+            idList.append("rgb(" + str(0+(id*id*9)%200+55) + "," + str(int(255/id)) + ", " + str(0+(id*10)%255) + ")")
         elif id % 3 == 2:
-            idList.append("rgb(" + str(9*id) + ", " + str(18*id) + ", " + "255)")
+            idList.append("rgb(" + str(0+(id*10)%255) + "," + str(0+(id*id*9)%200+55) + ", " + str(int(255/id)) + ")")
     return render_template("chatroom.html", idList = json.dumps(idList))
 
 @app.route("/logout")
@@ -438,6 +472,11 @@ def clock_out():
     else:
         flash("System error! not clocked out please notify an administrator")
         return redirect(url_for("index"))
+    
+@app.route("/config")
+@login_required
+def config():
+    return render_template("notready.html")
 
 # ----------error pages--------------------
 # invalid url
