@@ -2,15 +2,5 @@
 
 
 {% block content %}
-<script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
-    <script>
-        var idList = jQuery.parseJSON("{{idList}}".replaceAll("&#34;", '\"'))
-        
-        for (let i = 0; i < 101; i++){
-            const btn = document.createElement("BUTTON");
-            document.getElementById('btn').style.backgroundColor = rgb(240,240,210); 
-            document.body.appendChild(btn);
-            
-        }
-    </script>
+    {% include 'btnTest.html'%}
 {% endblock %}

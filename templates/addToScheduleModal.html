@@ -2,7 +2,7 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Schedule an employee</h5>
+                <h5 class="modal-title">Schedule an employee</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
@@ -10,6 +10,9 @@
             <div class="modal-body">
                 <form form action={{request.path}} method = 'post'>
                     {{ form.csrf_token }}
+                    <b> Click the calendar icon on the right to select a date and time </b>
+                    <br/>
+                    <br/>
                     <h> Enter Employee Name: </h>
                     <br/>
                     {{ form.employeeName(class="form-control", placeholder="ex: John Doe")}}

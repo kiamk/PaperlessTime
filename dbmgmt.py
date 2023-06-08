@@ -24,7 +24,8 @@ class dbmgmt:
     test_employee = ('Aaron Smith', 'Asmith', '456', 'aaronsmith@yahoo.com', '518-218-0700', 0)
 
     # Creating the table for employees if it does not exist
-    #for position: 0 = employee, 1 = manager, 2 = owner
+    #position: 0 = employee, 1 = manager, 2 = owner
+    #smsOptIn: 0 for no, 1 for yes
     cur.execute("""CREATE TABLE IF NOT EXISTS employees(
        employee_id INT PRIMARY KEY,
        name TEXT,
@@ -33,7 +34,8 @@ class dbmgmt:
        email TEXT,
        phone_number INT,
        position INT,
-       clock_in_history LONG VARCHAR
+       clock_in_history LONG VARCHAR,
+       smsOptIn INT
        );
     """)
 
@@ -55,7 +57,8 @@ class dbmgmt:
             email TEXT,
             phone_number INT,
             position INT,
-            clock_in_history LONG VARCHAR
+            clock_in_history LONG VARCHAR,
+            smsOptIn INT
         );
         """)
         self.cur.execute("SELECT employee_id FROM employees;")
@@ -117,11 +120,12 @@ class dbmgmt:
         list_employee_info.append(0)
         #line below converts an array of clock in info to JSON to be stored in the database
         list_employee_info.append(json.dumps([(0, 0), ]))
+        list_employee_info.append(1)
         employee_info = tuple(list_employee_info)
         print(employee_info)
         self.cur.execute("""
-            INSERT INTO employees(employee_id, name, username, password, email, phone_number, position, clock_in_history)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
+            INSERT INTO employees(employee_id, name, username, password, email, phone_number, position, clock_in_history, smsOptIn)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
         self.conn.commit()
         return(1)
 
@@ -207,7 +211,7 @@ class dbmgmt:
 
         self.cur.execute("""
             UPDATE employees
-            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, clock_in_history = ? position = ?
+            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, clock_in_history = ? position = ? smsOptIn = ?
             WHERE employee_id = ?""", emp_info)
         self.conn.commit()
 
