@@ -8,7 +8,7 @@ import json
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
-class dbmgmt:
+class dbmgmt():
     # add a way to retroactivly update missing days
     # ----------------------------------defining variables-------------------------
     # Variable name key:
@@ -23,27 +23,34 @@ class dbmgmt:
     test_employee_w_id = (0, 'bob flanner', 'bflanner', '123', 'bflanner@yahoo.com', 5185555555, clock_in_array,)
     test_employee = ('Aaron Smith', 'Asmith', '456', 'aaronsmith@yahoo.com', '518-218-0700', 0)
 
-    # Creating the table for employees if it does not exist
-    #position: 0 = employee, 1 = manager, 2 = owner
-    #smsOptIn: 0 for no, 1 for yes
-    cur.execute("""CREATE TABLE IF NOT EXISTS employees(
-       employee_id INT PRIMARY KEY,
-       name TEXT,
-       username TEXT,
-       password TEXT,
-       email TEXT,
-       phone_number INT,
-       position INT,
-       clock_in_history LONG VARCHAR,
-       smsOptIn INT
-       );
-    """)
-
 
     def __init__(self, conn, cur):
         self.conn = conn
         self.cur = cur
+        
+        # Creating the table for employees if it does not exist
+        #position: 0 = employee, 1 = manager, 2 = owner
+        #smsOptIn: 0 for no, 1 for yes
+        cur.execute("""CREATE TABLE IF NOT EXISTS employees(
+        employee_id INT PRIMARY KEY,
+        name TEXT,
+        username TEXT,
+        password TEXT,
+        email TEXT,
+        phone_number INT,
+        position INT,
+        clock_in_history LONG VARCHAR,
+        smsOptIn INT
+        );
+        """)
 
+    #check if employees has entries, if not it is time to create the owner account
+    def check_empty(self):
+        self.cur.execute("SELECT * FROM employees WHERE employee_id=1")
+        if self.cur.fetchall():
+            return 1
+        else:
+            return 0
 
     # add a new employee to the employee table. return 0 if fail and 1 if success
     # add_new_employee(name TEXT, username TEXT, password TEXT, email TEXT, phone_number INT, position INT)
@@ -117,9 +124,17 @@ class dbmgmt:
         if type(list_employee_info[4]) != int:
             list_employee_info[4] = re.sub(r'[^0-9]', '', list_employee_info[4])
         list_employee_info.insert(0, empid+1)
-        list_employee_info.append(0)
+        
+        self.cur.execute("SELECT * FROM employees")
+        if self.cur.fetchall():
+            #line below is for position set to employee if the database is not empty
+            list_employee_info.append(0)
+        else:
+            #line below is for position, set to owner if the database was previously empty
+            list_employee_info.append(2)
         #line below converts an array of clock in info to JSON to be stored in the database
         list_employee_info.append(json.dumps([(0, 0), ]))
+        #line below is for smsOptIn
         list_employee_info.append(1)
         employee_info = tuple(list_employee_info)
         self.cur.execute("""
@@ -246,6 +261,8 @@ class dbmgmt:
     def delete_employee(self, emp_info):
         self.cur.execute("DELETE FROM employees WHERE employee_id = ?", (emp_info[0], ))
         self.conn.commit()
+        
+
 
 # -------------------section for manually managing the database below --------------------
 #conn = sqlite3.connect('PaperlessTime.db')
@@ -254,4 +271,3 @@ class dbmgmt:
 #cur.execute("UPDATE employees SET position = 2 WHERE employee_id = 1")
 #conn.commit()
 #db = dbmgmt(conn, cur)
-      

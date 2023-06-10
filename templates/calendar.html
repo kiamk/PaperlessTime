@@ -1,5 +1,6 @@
 <script src="https://code.jquery.com/jquery-3.7.0.js" integrity="sha256-JlqSTELeR4TLqP0OG9dxM7yDPqX1ox/HfgiSLBj8+kM=" crossorigin="anonymous"></script>
 <script>  
+    //change day employee is working to green background. pass current_user.name
     document.addEventListener('DOMContentLoaded', function () {
         var calendarEl = document.getElementById('calendar');
         var calendar = new FullCalendar.Calendar(calendarEl, {
@@ -21,7 +22,7 @@
                         text: "Add Employee to Schedule",
                         click: function(){
                             //Modal is in <head> of dashboard.html and schedule.html
-                            $('#scheduleEmployeeModal').modal();
+                            $('#scheduleEmployeeModal').modal('show');
                         }
                     }
                 },

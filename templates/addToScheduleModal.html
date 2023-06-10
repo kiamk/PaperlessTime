@@ -1,34 +1,33 @@
-<div class="modal fade" id="scheduleEmployeeModal">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Schedule an employee</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <form form action={{request.path}} method = 'post'>
-                    {{ form.csrf_token }}
-                    <b> Click the calendar icon on the right to select a date and time </b>
-                    <br/>
-                    <br/>
-                    <h> Enter Employee Name: </h>
-                    <br/>
-                    {{ form.employeeName(class="form-control")}}
-                    <br/>
-                    <h> Enter Employee Start Date and Time: </h>
-                    <br/>
-                    {{ form.start(class="form-control")}}
-                    <br/>
-                    <h> Enter Employee End Date and Time: </h>
-                    <br/>
-                    {{ form.end(class="form-control")}}
-                    <br/>
-
-                    {{ form.scheduleEmployee(class="btn btn-primary", placeholder="Add to Schedule") }}
-                </form>
-            </div>
+<div class="modal fade" id="scheduleEmployeeModal" tabindex="-1" aria-labelledby="scheduleEmployeeModal" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTitle">Schedule an employee</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
+        <div class="modal-body">
+            <form form action={{request.path}} method = 'post'>
+                {{ form.csrf_token }}
+                <b> Click the calendar icon on the right to select a date and time </b>
+                <br/>
+                <br/>
+                <h> Enter Employee Name: </h>
+                <br/>
+                {{ form.employeeName(class="form-select")}}
+                <br/>
+                <h> Enter Employee Start Date and Time: </h>
+                <br/>
+                {{ form.start(class="form-control")}}
+                <br/>
+                <h> Enter Employee End Date and Time: </h>
+                <br/>
+                {{ form.end(class="form-control")}}
+                <br/>
+
+                {{ form.scheduleEmployee(class="btn btn-primary", placeholder="Add to Schedule") }}
+            </form>
+        </div>
+      </div>
     </div>
+
 </div>

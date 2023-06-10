@@ -5,16 +5,41 @@
 
 {% block content %}
     <center>
+        <!-- __________________below here for company pages______________________-->
+    {% if current_user.is_authenticated %}
+        <h1>Hello, {{ current_user.name }}!</h1>
+        <p>Please clock in or clock out by clicking the buttons below</p>
+        <br/>
+        <br/>
+        <a href="/c/{{companyName}}/p/clock_in" class="btn btn-success btn-lg" role="button">Clock-In</a>
+        <br/>
+        <br/>
+        <a href="/c/{{companyName}}/p/clock_out" class="btn btn-danger btn-lg" role="button">Clock-Out</a>
+
+    {% else %}
+        <h1>Please Enter Your Login Info Below</h1>
+        <p> or click add employee in the navbar to register</p>
+        <div class = "shadow p-3 mb-5 bg-body rounded">
+            <form form action="/c/{{ companyName }}/p" method="post">
+                {{ form.hidden_tag() }}
+                {{ form.username(class="form-control", placeholder="Enter Username") }}
+                <br/>
+                {{ form.password(class="form-control", placeholder="Enter Password") }}
+                <br/>
+                {{ form.login(class="btn btn-primary") }}
+            </form>
+        </div>
+    {% endif %}
 
     {% if current_user.is_authenticated %}
         <h1>Hello, {{ current_user.name }}!</h1>
         <p>Please clock in or clock out by clicking the buttons below</p>
         <br/>
         <br/>
-        <a href="/clock_in" class="btn btn-secondary btn-lg" role="button">Clock-In</a>
+        <a href="/clock_in" class="btn btn-success btn-lg" role="button">Clock-In</a>
         <br/>
         <br/>
-        <a href="/clock_out" class="btn btn-secondary btn-lg" role="button">Clock-Out</a>
+        <a href="/clock_out" class="btn btn-danger btn-lg" role="button">Clock-Out</a>
 
     {% else %}
         <h1>Please Enter Your Login Info Below</h1>
@@ -30,5 +55,6 @@
             </form>
         </div>
     {% endif %}
+
     </center>
 {% endblock %}

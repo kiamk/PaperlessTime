@@ -1,47 +1,116 @@
 <!-- Kiam Kaiser
      CS498
      Professor Scott Spetka -->
+<!-- ____________________below is for when using company name________________________________-->
+{% if request.path[:3] == '/c/' %}
+  <script> alert("company name ==" + "{{ companyName }}") </script>
+  <script>
+    alert("authorizedCompanies == {{ authorizedCompanies }}") 
+    alert("company name == {% if companyName in authorizedCompanies %} {% endif %}") 
+  </script>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <a class="navbar-brand ms-3" href={{ url_for('cIndex', companyName = request.path.lstrip('d/').rstrip('/p'))}}>Paperless Time</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-  <a class="navbar-brand ms-3" href={{ url_for('index') }}>Paperless Time</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
 
-  <div class="collapse navbar-collapse" id="navbarSupportedContent">
-
-    {% if current_user.is_authenticated %}
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item text-center">
-            <a class="nav-link" href={{ url_for('dashboard') }}>Dashboard</a>
-        </li>
-        <li class="nav-item text-center">
-            <a class="nav-link" href={{ url_for('schedule') }}>Schedule</a>
-        </li>
-        <li class="nav-item text-center">
-            <a class="nav-link" href={{ url_for('chatroom') }}>Chatroom</a>
-        </li>
-        <li class="nav-item text-center">
-            <a class="nav-link" href={{ url_for('clock_in') }}>Clock-In</a>
-        </li>
-        <li class="nav-item text-center">
-            <a class="nav-link" href={{ url_for('clock_out') }}>Clock-Out</a>
-        </li>
-      </ul>
-      <!-- me is margin end(right) ms is margin start(left)-->
-      {% if current_user.position == 2%}
-        <ul class="navbar-nav navbar-right ms-auto ">
+      {% if current_user.is_authenticated %}
+        <ul class="navbar-nav me-auto">
           <li class="nav-item text-center">
-            <a class="nav-link mt-1" href={{ url_for('add_employee') }}>Add New Employee</a>
+              <a class="nav-link" href={{ url_for('cDashboard', companyName = request.path.lstrip('d/').rstrip('/p')) }}>Dashboard</a>
           </li>
           <li class="nav-item text-center">
-              <a class="nav-link me-1 mt-1" href={{ url_for('settings') }}><h5><i class="bi bi-gear-fill"></i></h5></a>
+              <a class="nav-link" href={{ url_for('cSchedule', companyName = request.path.lstrip('d/').rstrip('/p')) }}>Schedule</a>
           </li>
           <li class="nav-item text-center">
-            <a href="/logout" class="btn btn-secondary mt-1 " role="button">Logout</a>
+              <a class="nav-link" href={{ url_for('cChatroom', companyName = request.path.lstrip('d/').rstrip('/p')) }}>Chatroom</a>
+          </li>
+          <li class="nav-item text-center">
+              <a class="nav-link" href={{ url_for('cClock_in', companyName = request.path.lstrip('d/').rstrip('/p')) }}>Clock-In</a>
+          </li>
+          <li class="nav-item text-center">
+              <a class="nav-link" href={{ url_for('cClock_out', companyName = request.path.lstrip('d/').rstrip('/p')) }}>Clock-Out</a>
           </li>
         </ul>
+        <!-- me is margin end(right) ms is margin start(left)-->
+        {% if current_user.position == 2%}
+          <ul class="navbar-nav navbar-right ms-auto ">
+            <li class="nav-item text-center">
+              <a class="nav-link mt-1" href={{ url_for('cAdd_employee') }}>Add New Employee</a>
+            </li>
+            <li class="nav-item text-center">
+                <a class="nav-link me-1 mt-1" href={{ url_for('cSettings') }}><h5><i class="bi bi-gear-fill"></i></h5></a>
+            </li>
+            <li class="nav-item text-center">
+              <a href="/logout" class="btn btn-secondary mt-1 " role="button">Logout</a>
+            </li>
+          </ul>
+        {% endif %}
       {% endif %}
-    {% endif %}
-  </div>
-</nav>
+        {%if databaseContent == 0%}
+          <ul class="navbar-nav navbar-right ms-auto ">
+            <li class="nav-item text-center">
+              <a class="nav-link mt-1" href={{ url_for('cAdd_employee', companyName)}}>Add Owner</a>
+            </li>
+          </ul>
+          {% if companyName in authorizedCompanies %}
+            <script> alert("test") </script>
+          {% endif %}
+        {% endif %}
+      </div>
+  </nav>
+{% else %}
+
+<!-- ______________below is for demo with no company________________-->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+      <a class="navbar-brand ms-3" href={{ url_for('index')}}>Paperless Time</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+    
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        {% if current_user.is_authenticated %}
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item text-center">
+                <a class="nav-link" href={{ url_for('dashboard') }}>Dashboard</a>
+            </li>
+            <li class="nav-item text-center">
+                <a class="nav-link" href={{ url_for('schedule') }}>Schedule</a>
+            </li>
+            <li class="nav-item text-center">
+                <a class="nav-link" href={{ url_for('chatroom') }}>Chatroom</a>
+            </li>
+            <li class="nav-item text-center">
+                <a class="nav-link" href={{ url_for('clock_in') }}>Clock-In</a>
+            </li>
+            <li class="nav-item text-center">
+                <a class="nav-link" href={{ url_for('clock_out') }}>Clock-Out</a>
+            </li>
+          </ul>
+          <!-- me is margin end(right) ms is margin start(left)-->
+          {% if current_user.position == 2%}
+            <ul class="navbar-nav navbar-right ms-auto ">
+              <li class="nav-item text-center">
+                <a class="nav-link mt-1" href={{ url_for('add_employee') }}>Add New Employee</a>
+              </li>
+              <li class="nav-item text-center">
+                  <a class="nav-link me-1 mt-1" href={{ url_for('settings') }}><h5><i class="bi bi-gear-fill"></i></h5></a>
+              </li>
+              <li class="nav-item text-center">
+                <a href="/logout" class="btn btn-secondary mt-1 " role="button">Logout</a>
+              </li>
+            </ul>
+          {% endif %}
+        {% endif %}
+        {%if databaseContent == 0%}
+        <ul class="navbar-nav navbar-right ms-auto ">
+          <li class="nav-item text-center">
+            <a class="nav-link mt-1" href={{ url_for('add_employee')}}>Add Owner</a>
+          </li>
+        </ul>
+        {% endif %}
+      </div>
+    </nav>
+{% endif %}
