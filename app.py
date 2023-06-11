@@ -1,7 +1,7 @@
 #Kiam Kaiser
 #CS498
 #Professor Scott Spetka
-from flask import Flask, render_template, flash, request, redirect, url_for, jsonify
+from flask import Flask, render_template, flash, request, redirect, url_for, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField, IntegerField, DateField
 from wtforms.validators import InputRequired
@@ -41,10 +41,11 @@ def getEmployeeNameList():
     employeeList.insert(0, 'Select an Employee')
     return(employeeList)
 
-
 # create Employee class
 class employee(UserMixin):
     def __init__(self, employee_info):
+        for x in employee_info:
+            print(x)
         self.id = employee_info[0]
         self.name = employee_info[1]
         self.username = employee_info[2]
@@ -54,10 +55,18 @@ class employee(UserMixin):
         self.position = employee_info[6]
         self.clock_in_history = employee_info[7]
         self.smsOptIn = employee_info[8]
+        #if companyName is blank such as the first load_user call or in demo
+        try:
+            self.company = employee_info[9][1:]
+        except:
+            self.company = ""
 
     def __str__(self):
         return f"{self.id}, {self.name}, {self.username}, {self.password},\
                 {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}"
+    
+    def get_id(self):
+        return(json.dumps([self.company, self.id]))
 
     def get_clock_tuple(self):
         return tuple([self.id, self.clock_in_history])
@@ -314,29 +323,21 @@ def addToSchedule():
     json.dump(schedule, file)
     file.close()
 
-
 @login_manager.user_loader
-def load_user(user_id, companyName):
-    conn = sqlite3.connect('databases/' + str(companyName) + 'PaperlessTime.db')
+def load_user(sessionList):
+    sessionList = json.loads(str(sessionList))
+    print("session list")
+    print(sessionList)
+    conn = sqlite3.connect('databases/' + sessionList[0] + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
-    emp_info = db.id_pull_employee_info(user_id)
+    emp_info = db.id_pull_employee_info(str(sessionList[1]))
     if emp_info == 0:
         return None
     conn.close()
     return employee(emp_info)
 
 #--------------------pages for no company name below-------------------------
-@login_manager.user_loader
-def load_user(user_id):
-    conn = sqlite3.connect('databases/PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    emp_info = db.id_pull_employee_info(user_id)
-    if emp_info == 0:
-        return None
-    conn.close()
-    return employee(emp_info)
 
 # add_employee page
 @app.route("/add_employee", methods=['GET', 'POST'])
@@ -396,12 +397,12 @@ def add_employee():
         form = newempform(formdata = None))
 
 # home page
-@app.route("/", methods=['GET', 'POST'])
 def index():
     
     username = None
     password = None
     # initializing db object
+    print(input)
     conn = sqlite3.connect('databases/PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
@@ -421,9 +422,11 @@ def index():
             db_login_indicator = db.pull_employee_info(login_info)
             print(db_login_indicator)
             if db_login_indicator != 0 and db_login_indicator != 1:
-                emp = employee(db.pull_employee_info(login_info))
+                emp = db.pull_employee_info(login_info) + ["",]
+                print("WRONGemp9 = ")
+                print(emp)
+                emp = employee(emp)
                 login_user(emp)
-                print("test")
                 return redirect(url_for('index'))
             elif db_login_indicator == 0:
                 flash("The username you entered could not be found!")
@@ -568,11 +571,11 @@ def settings():
     return render_template("settings.html", form = form)
 
 # ----------company pages below. these pages pull company config files. the small c in front of function names stands for company-----------------
-# add_employee page 
-@app.route("/c/<companyName>/p/add_employee", methods=['GET', 'POST'])
+# add_employee page
+@app.route("/c/<companyName>/p/add_employee/", methods=['GET', 'POST'])
 def cAdd_employee(companyName):
     # initializing db object
-    conn = sqlite3.connect(str(companyName) + 'PaperlessTime.db')
+    conn = sqlite3.connect('databases/' + str(companyName) + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     name = None
@@ -581,6 +584,7 @@ def cAdd_employee(companyName):
     email = None
     phone_number = None
     form = newempform()
+    databaseContent = db.check_empty()
 
 
     if form.validate_on_submit():
@@ -600,13 +604,13 @@ def cAdd_employee(companyName):
             db_add_indicator = db.add_new_employee(new_emp_info)
             if db_add_indicator == 1:
                 flash("The employee has been successfully added to the database, you may now login!")
-                return redirect(url_for('cAdd_employee'))
+                return redirect(url_for('cIndex', companyName=companyName))
             elif db_add_indicator == 0:
                 flash("An employee with this name already exists!")
-                return redirect(url_for('cAdd_employee'))
+                return redirect(url_for('cAdd_employee', companyName=companyName))
             elif db_add_indicator == 2:
                 flash("An employee with this username already exists!")
-                return redirect(url_for('cAdd_employee'))
+                return redirect(url_for('cAdd_employee', companyName=companyName))
             
         
         new_emp_info = None
@@ -620,49 +624,51 @@ def cAdd_employee(companyName):
         email = email,
         phone_number = phone_number,
         companyName = companyName,
+        databaseContent = databaseContent,
         form = newempform(formdata = None))
 
 # home page
-@app.route("/c/<companyName>/p", methods=['GET', 'POST'])
+@app.route("/c/<companyName>/p/", methods=['GET', 'POST'])
 def cIndex(companyName):
     file = open('authorizedCompanies.json', 'r')
-    authorizedCompanies = json.load(file)
+    authorizedCompanies = [x.lower()for x in json.load(file)]
     username = None
     password = None
     # initializing db object
-    conn = sqlite3.connect(str(companyName) + 'PaperlessTime.db')
+    conn = sqlite3.connect("databases/" + str(companyName) + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     form = loginform()
+    databaseContent = db.check_empty()
 
     if form.validate_on_submit():
         username = form.username.data.lower()
         form.username.data = ''
         password = form.password.data
         form.password.data = ''
-        login_info = (username, password)
+        login_info = (username, password, companyName)
         if login_info != '':
-            print("test1")
             db_login_indicator = db.pull_employee_info(login_info)
             print(db_login_indicator)
             if db_login_indicator != 0 and db_login_indicator != 1:
-                emp = employee(db.pull_employee_info(login_info))
-                login_user(emp, companyName)
-                print("test")
+                # adding the one in front of company name as a holder encase company name is empty, this will be removed in the user innit
+                emp = db.pull_employee_info(login_info) + ["1" + companyName,]
+                print("len emp = ")
+                print(len(emp))
+                emp = employee(emp)
+                login_user(emp)
                 return redirect(url_for('cIndex', companyName = companyName))
             elif db_login_indicator == 0:
                 flash("The username you entered could not be found!")
-                print("test")
                 return redirect(url_for('cIndex', companyName = companyName))
             elif db_login_indicator == 1:
                 flash("The password you entered was incorrect!")
-                print("test")
                 return redirect(url_for('cIndex', companyName = companyName))
     conn.close()
-    return render_template("index.html", username = username, password = password, companyName = companyName, 
+    return render_template("index.html", username = username, password = password, databaseContent = databaseContent, companyName = companyName, 
                            authorizedCompanies = authorizedCompanies, form = loginform(formdata=None))
         
-@app.route("/c/<companyName>/p/dashboard", methods=['GET', 'POST'])
+@app.route("/c/<companyName>/p/dashboard/", methods=['GET', 'POST'])
 @login_required
 def cDashboard(companyName):
     #creating a schedule Json if there isnt one yet
@@ -677,7 +683,7 @@ def cDashboard(companyName):
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
-@app.route("/c/<companyName>/p/schedule", methods = ["GET", "POST"])
+@app.route("/c/<companyName>/p/schedule/", methods = ["GET", "POST"])
 @login_required
 def cSchedule(companyName):
     #creating a schedule Json if there isnt one yet
@@ -691,7 +697,7 @@ def cSchedule(companyName):
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
 
-@app.route("/c/<companyName>/p/chatroom")
+@app.route("/c/<companyName>/p/chatroom/")
 @login_required
 def cChatroom(companyName):
     idList = []
@@ -704,14 +710,14 @@ def cChatroom(companyName):
             idList.append("rgb(" + str(0+(id*10)%255) + "," + str(0+(id*id*9)%200+55) + ", " + str(int(255/id)) + ")")
     return render_template("chatroom.html", idList = json.dumps(idList))
 
-@app.route("/c/<companyName>/p/logout")
+@app.route("/c/<companyName>/p/logout/")
 @login_required
 def cLogout(companyName):
     logout_user()
     flash("Successfully Logged Out")
     return redirect(url_for('cIndex'))
 
-@app.route("/c/<companyName>/p/clock_in")
+@app.route("/c/<companyName>/p/clock_in/")
 @login_required
 def cClock_in(companyName):
     conn = sqlite3.connect(companyName + 'PaperlessTime.db')
@@ -729,7 +735,7 @@ def cClock_in(companyName):
         flash("System error! not clocked in please notify an administrator")
         return redirect(url_for("cIndex"))
 
-@app.route("/c/<companyName>/p/clock_out")
+@app.route("/c/<companyName>/p/clock_out/")
 @login_required
 def cClock_out(companyName):
     conn = sqlite3.connect(companyName + 'PaperlessTime.db')
@@ -747,7 +753,7 @@ def cClock_out(companyName):
         flash("System error! not clocked out please notify an administrator")
         return redirect(url_for("cIndex"))
     
-@app.route("/c/<companyName>/p/settings", methods=['GET', 'POST'])
+@app.route("/c/<companyName>/p/settings/", methods=['GET', 'POST'])
 @login_required
 def cSettings(companyName):
     #add seperate settings page for managers and employees to do things like turn off sms

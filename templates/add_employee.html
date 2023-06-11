@@ -6,23 +6,60 @@
 {% block content %}
 
     <center>
-    <h1>Please enter your information</h1>
-    <p>Press Submit when finished</p>
-    <br/>
-    <br/>
-    <form form action= "/add_employee" method="post">
-        {{ form.hidden_tag() }}
-        {{ form.name(class="form-control", placeholder="Enter Name (ex:first last)") }}
-        <br/>
-        {{ form.username(class="form-control", placeholder="Enter Username") }}
-        <br/>
-        {{ form.password(class="form-control", placeholder="Enter Password") }}
-        <br/>
-        {{ form.email(class="form-control", placeholder="Enter a Valid Email") }}
-        <br/>
-        {{ form.phone_number(class="form-control", placeholder="Enter Phone Number (ex: 5556667777)") }}
-        <br/>
-        {{ form.submit(class="btn btn-primary") }}
-    </form>
+        {% if request.path[:3] == '/c/' %}
+            <script>alert({{databaseContent}}) </script>
+            {% if databaseContent != 0 and current_user.is_authenticated == false%}
+                <meta http-equiv="Refresh" content="0; url='{{ url_for('cIndex', companyName=companyName) }}'" />
+            {% else %}
+                {% if databaseContent == 0 %}
+                    <b><h1>Add Owner</h1></b>
+                {% endif %}
+                <h1>Please enter your information</h1>
+                <p>Press Submit when finished</p>
+                <br/>
+                <br/>
+                <form form action= {{ url_for("cAdd_employee", companyName=companyName) }} method="post">
+                    {{ form.hidden_tag() }}
+                    {{ form.name(class="form-control", placeholder="Enter Name (ex:first last)") }}
+                    <br/>
+                    {{ form.username(class="form-control", placeholder="Enter Username") }}
+                    <br/>
+                    {{ form.password(class="form-control", placeholder="Enter Password") }}
+                    <br/>
+                    {{ form.email(class="form-control", placeholder="Enter a Valid Email") }}
+                    <br/>
+                    {{ form.phone_number(class="form-control", placeholder="Enter Phone Number (ex: 5556667777)") }}
+                    <br/>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            {% endif %}
+        {% else %}
+            {% if databaseContent != 0 and current_user.is_authenticated == false%}
+                <meta http-equiv="Refresh" content="0; url='{{ url_for('cIndex', companyName=companyName) }}'" />
+            {% else %}
+                {% if databaseContent == 0 %}
+                    <b><h1>Add Owner</h1></b>
+                {% endif %}
+                <h1>Please enter your information</h1>
+                <p>Press Submit when finished</p>
+                <br/>
+                <br/>
+                <form form action= "/add_employee" method="post">
+                    {{ form.hidden_tag() }}
+                    {{ form.name(class="form-control", placeholder="Enter Name (ex:first last)") }}
+                    <br/>
+                    {{ form.username(class="form-control", placeholder="Enter Username") }}
+                    <br/>
+                    {{ form.password(class="form-control", placeholder="Enter Password") }}
+                    <br/>
+                    {{ form.email(class="form-control", placeholder="Enter a Valid Email") }}
+                    <br/>
+                    {{ form.phone_number(class="form-control", placeholder="Enter Phone Number (ex: 5556667777)") }}
+                    <br/>
+                    {{ form.submit(class="btn btn-primary") }}
+                </form>
+            {% endif %}
+
+        {% endif %}
     </center>
 {% endblock %}
