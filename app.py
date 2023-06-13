@@ -41,9 +41,11 @@ def getEmployeeNameList():
     employeeList.insert(0, 'Select an Employee')
     return(employeeList)
 
+
 # create Employee class
 class employee(UserMixin):
     def __init__(self, employee_info):
+        print("emp info from the innit = " + str(employee_info))
         for x in employee_info:
             print(x)
         self.id = employee_info[0]
@@ -397,8 +399,8 @@ def add_employee():
         form = newempform(formdata = None))
 
 # home page
+@app.route("/", methods=['GET', 'POST'])
 def index():
-    
     username = None
     password = None
     # initializing db object
@@ -418,23 +420,19 @@ def index():
         form.password.data = ''
         login_info = (username, password)
         if login_info != '':
-            print("test1")
             db_login_indicator = db.pull_employee_info(login_info)
             print(db_login_indicator)
             if db_login_indicator != 0 and db_login_indicator != 1:
                 emp = db.pull_employee_info(login_info) + ["",]
-                print("WRONGemp9 = ")
                 print(emp)
                 emp = employee(emp)
                 login_user(emp)
                 return redirect(url_for('index'))
             elif db_login_indicator == 0:
                 flash("The username you entered could not be found!")
-                print("test")
                 return redirect(url_for('index'))
             elif db_login_indicator == 1:
                 flash("The password you entered was incorrect!")
-                print("test")
                 return redirect(url_for('index'))
     conn.close()
     return render_template("index.html", username = username, password = password, databaseContent=databaseContent, form = loginform(formdata=None))
@@ -634,6 +632,7 @@ def cIndex(companyName):
     authorizedCompanies = [x.lower()for x in json.load(file)]
     username = None
     password = None
+    
     # initializing db object
     conn = sqlite3.connect("databases/" + str(companyName) + 'PaperlessTime.db')
     cur = conn.cursor()
@@ -653,8 +652,6 @@ def cIndex(companyName):
             if db_login_indicator != 0 and db_login_indicator != 1:
                 # adding the one in front of company name as a holder encase company name is empty, this will be removed in the user innit
                 emp = db.pull_employee_info(login_info) + ["1" + companyName,]
-                print("len emp = ")
-                print(len(emp))
                 emp = employee(emp)
                 login_user(emp)
                 return redirect(url_for('cIndex', companyName = companyName))
