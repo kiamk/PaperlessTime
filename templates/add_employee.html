@@ -7,8 +7,9 @@
 
     <center>
         {% if request.path[:3] == '/c/' %}
+        <!-- ____________________below here for company pages__________________________-->
             <script>alert({{databaseContent}}) </script>
-            {% if databaseContent != 0 and current_user.is_authenticated == false%}
+            {% if databaseContent != 0 and current_user.is_authenticated(companyName) == false%}
                 <meta http-equiv="Refresh" content="0; url='{{ url_for('cIndex', companyName=companyName) }}'" />
             {% else %}
                 {% if databaseContent == 0 %}
@@ -34,8 +35,9 @@
                 </form>
             {% endif %}
         {% else %}
-            {% if databaseContent != 0 and current_user.is_authenticated == false%}
-                <meta http-equiv="Refresh" content="0; url='{{ url_for('cIndex', companyName=companyName) }}'" />
+        <!-- _________________________below here for demo pages_____________________-->
+            {% if databaseContent != 0 and current_user.is_authenticated(companyName) == false%}
+                <meta http-equiv="Refresh" content="0; url='{{ url_for('index', companyName=companyName) }}'" />
             {% else %}
                 {% if databaseContent == 0 %}
                     <b><h1>Add Owner</h1></b>

@@ -1,13 +1,15 @@
 #Kiam Kaiser
 #CS498
 #Professor Scott Spetka
+#scheduled and acutal worked time
 from flask import Flask, render_template, flash, request, redirect, url_for, session
 from flask_wtf import FlaskForm
+from functools import wraps
 from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField, IntegerField, DateField
 from wtforms.validators import InputRequired
 from dbmgmt import dbmgmt
 import sqlite3
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
+from flask_login import UserMixin, AnonymousUserMixin, login_user, LoginManager, login_required, logout_user, current_user
 import secrets
 import smtplib
 import json
@@ -41,31 +43,36 @@ def getEmployeeNameList():
     employeeList.insert(0, 'Select an Employee')
     return(employeeList)
 
+# anonymous user class with the new is_authenticated
+class anonymous(AnonymousUserMixin):
+    def is_authenticated(self, companyName):
+        return False
+    
+login_manager.anonymous_user = anonymous
 
 # create Employee class
 class employee(UserMixin):
     def __init__(self, employee_info):
-        print("emp info from the innit = " + str(employee_info))
-        for x in employee_info:
-            print(x)
         self.id = employee_info[0]
         self.name = employee_info[1]
         self.username = employee_info[2]
         self.password = employee_info[3]
         self.email = employee_info[4]
         self.phone_number = employee_info[5]
-        self.position = employee_info[6]
-        self.clock_in_history = employee_info[7]
-        self.smsOptIn = employee_info[8]
-        #if companyName is blank such as the first load_user call or in demo
-        try:
-            self.company = employee_info[9][1:]
-        except:
-            self.company = ""
+        self.company = employee_info[6]
+        self.position = employee_info[7]
+        self.clock_in_history = employee_info[8]
+        self.smsOptIn = employee_info[9]
 
     def __str__(self):
         return f"{self.id}, {self.name}, {self.username}, {self.password},\
-                {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}"
+                {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}, {self.smsOptIn}, {self.company}"
+    
+    def is_authenticated(self, companyName):
+        print("companyName = " + str(companyName))
+        print("self.company = " + str(self.company))
+        print("self = " + str(self))
+        return companyName == self.company
     
     def get_id(self):
         return(json.dumps([self.company, self.id]))
@@ -328,16 +335,20 @@ def addToSchedule():
 @login_manager.user_loader
 def load_user(sessionList):
     sessionList = json.loads(str(sessionList))
-    print("session list")
-    print(sessionList)
     conn = sqlite3.connect('databases/' + sessionList[0] + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
-    emp_info = db.id_pull_employee_info(str(sessionList[1]))
+    emp_info = db.id_pull_employee_info(str(sessionList[1])) + ["",]
     if emp_info == 0:
         return None
     conn.close()
     return employee(emp_info)
+
+@app.before_request
+def company_sync():
+    if "_user_id" in session:
+        if not request.path.lstrip('c/').rstrip('/p') == str(json.loads(session["_user_id"])[0]):
+            return redirect(url_for('cIndex', companyName = request.path.lstrip('c/').rstrip('/p')))
 
 #--------------------pages for no company name below-------------------------
 
@@ -404,7 +415,6 @@ def index():
     username = None
     password = None
     # initializing db object
-    print(input)
     conn = sqlite3.connect('databases/PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
@@ -421,10 +431,8 @@ def index():
         login_info = (username, password)
         if login_info != '':
             db_login_indicator = db.pull_employee_info(login_info)
-            print(db_login_indicator)
             if db_login_indicator != 0 and db_login_indicator != 1:
                 emp = db.pull_employee_info(login_info) + ["",]
-                print(emp)
                 emp = employee(emp)
                 login_user(emp)
                 return redirect(url_for('index'))
@@ -533,7 +541,6 @@ def settings():
     form.employeeName.choices = getEmployeeNameList()
     form.removeEmployee.choices = getEmployeeNameList()
     if request.method == 'POST':
-        print("test")
         try:
             file = open("companyConfigs/" + "COMPANYNAME", 'r')
             configInfo = json.load(file)
@@ -597,7 +604,7 @@ def cAdd_employee(companyName):
         phone_number = form.phone_number.data
         form.phone_number.data = ''
         form = newempform(formdata = None)
-        new_emp_info = (name, username, password, email, phone_number)
+        new_emp_info = (name, username, password, email, phone_number, companyName)
         if new_emp_info != '':
             db_add_indicator = db.add_new_employee(new_emp_info)
             if db_add_indicator == 1:
@@ -648,12 +655,13 @@ def cIndex(companyName):
         login_info = (username, password, companyName)
         if login_info != '':
             db_login_indicator = db.pull_employee_info(login_info)
-            print(db_login_indicator)
             if db_login_indicator != 0 and db_login_indicator != 1:
                 # adding the one in front of company name as a holder encase company name is empty, this will be removed in the user innit
-                emp = db.pull_employee_info(login_info) + ["1" + companyName,]
+                emp = db.pull_employee_info(login_info)
                 emp = employee(emp)
+                print("login user info = " + str(emp))
                 login_user(emp)
+                print("post2")
                 return redirect(url_for('cIndex', companyName = companyName))
             elif db_login_indicator == 0:
                 flash("The username you entered could not be found!")
@@ -717,7 +725,7 @@ def cLogout(companyName):
 @app.route("/c/<companyName>/p/clock_in/")
 @login_required
 def cClock_in(companyName):
-    conn = sqlite3.connect(companyName + 'PaperlessTime.db')
+    conn = sqlite3.connect('databases/' + companyName + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     clock_in_indicator = db.clock_in(current_user.get_clock_tuple())
@@ -762,7 +770,6 @@ def cSettings(companyName):
     form.employeeName.choices = getEmployeeNameList()
     form.removeEmployee.choices = getEmployeeNameList()
     if request.method == 'POST':
-        print("test")
         try:
             file = open("companyConfigs/" + "COMPANYNAME", 'r')
             configInfo = json.load(file)

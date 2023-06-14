@@ -38,6 +38,7 @@ class dbmgmt():
         password TEXT,
         email TEXT,
         phone_number INT,
+        company TEXT,
         position INT,
         clock_in_history LONG VARCHAR,
         smsOptIn INT
@@ -63,6 +64,7 @@ class dbmgmt():
             password TEXT,
             email TEXT,
             phone_number INT,
+            company TEXT,
             position INT,
             clock_in_history LONG VARCHAR,
             smsOptIn INT
@@ -138,8 +140,8 @@ class dbmgmt():
         list_employee_info.append(1)
         employee_info = tuple(list_employee_info)
         self.cur.execute("""
-            INSERT INTO employees(employee_id, name, username, password, email, phone_number, position, clock_in_history, smsOptIn)
-            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
+            INSERT INTO employees(employee_id, name, username, password, email, phone_number, company, position, clock_in_history, smsOptIn)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?);""", employee_info)
         self.conn.commit()
         return(1)
 
@@ -165,7 +167,7 @@ class dbmgmt():
             return 1
 
         #converting clock in history from JSON to an array
-        sel_emp[7] = json.loads(sel_emp[7])
+        sel_emp[8] = json.loads(sel_emp[8])
         return sel_emp
 
 
@@ -178,7 +180,7 @@ class dbmgmt():
         except IndexError:
             print("The employee with that id could not be found")
             return 0
-        sel_emp[7] = json.loads(sel_emp[7])
+        sel_emp[8] = json.loads(sel_emp[8])
         return sel_emp
     
     # pulls employee info and returns that info in the form of a tuple given employee name
@@ -190,7 +192,7 @@ class dbmgmt():
         except IndexError:
             print("The employee with that name could not be found")
             return 0
-        sel_emp[7] = json.loads(sel_emp[7])
+        sel_emp[8] = json.loads(sel_emp[8])
         return sel_emp
 
 
@@ -225,7 +227,7 @@ class dbmgmt():
 
         self.cur.execute("""
             UPDATE employees
-            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, clock_in_history = ? position = ? smsOptIn = ?
+            SET employee_id = ?, name = ?, username = ?, password = ?, email = ?, phone_number = ?, company, clock_in_history = ?, position = ?, smsOptIn = ?
             WHERE employee_id = ?""", emp_info)
         self.conn.commit()
 
