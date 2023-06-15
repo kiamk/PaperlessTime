@@ -342,11 +342,14 @@ def load_user(sessionList):
     return employee(emp_info)
 
 @app.before_request
-def company_sync():
-    if "_user_id" in session:
-        if not request.path.lstrip('c/').rstrip('/p') == str(json.loads(session["_user_id"])[0]):
-            return redirect(url_for('cIndex', companyName = request.path.lstrip('c/').rstrip('/p')))
-
+def check_authorization():
+    file = open('authorizedCompanies.json', 'r')
+    companyName = request.path.rsplit('/p')[0].split('/c/')[1]
+    print("companyName = " + str(companyName))
+    authorizedCompanies = [x.lower() for x in json.load(file)]
+    if not(companyName in authorizedCompanies) and not('signup' in request.path):
+        return redirect(url_for('cSignup', companyName = companyName))
+    file.close()
 #--------------------pages for no company name below-------------------------
 
 # add_employee page
@@ -632,8 +635,6 @@ def cAdd_employee(companyName):
 # home page
 @app.route("/c/<companyName>/p/", methods=['GET', 'POST'])
 def cIndex(companyName):
-    file = open('authorizedCompanies.json', 'r')
-    authorizedCompanies = [x.lower()for x in json.load(file)]
     username = None
     password = None
     
@@ -668,7 +669,7 @@ def cIndex(companyName):
                 return redirect(url_for('cIndex', companyName = companyName))
     conn.close()
     return render_template("index.html", username = username, password = password, databaseContent = databaseContent, companyName = companyName, 
-                           authorizedCompanies = authorizedCompanies, form = loginform(formdata=None))
+                            form = loginform(formdata=None))
         
 @app.route("/c/<companyName>/p/dashboard/", methods=['GET', 'POST'])
 @login_required
@@ -800,6 +801,10 @@ def cSettings(companyName):
     
     conn.close()
     return render_template("settings.html", form = form)
+
+@app.route("/c/<companyName>/p/signup/")
+def cSignup(companyName):
+    return render_template('sign_up.html', companyName = companyName)
 
 # ----------error pages--------------------
 # invalid url

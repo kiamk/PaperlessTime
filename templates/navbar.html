@@ -44,7 +44,7 @@
           </ul>
         {% endif %}
       {% endif %}
-        {%if databaseContent == 0%}
+        {%if databaseContent == 0 and not 'signup' in request.path%}
           <ul class="navbar-nav navbar-right ms-auto ">
             <li class="nav-item text-center">
               <a class="nav-link mt-1" href={{ url_for('cAdd_employee', companyName=companyName) }}>Add Owner</a>
