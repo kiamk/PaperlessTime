@@ -69,10 +69,7 @@ class employee(UserMixin):
                 {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}, {self.smsOptIn}, {self.company}"
     
     def is_authenticated(self, companyName):
-        print("companyName = " + str(companyName))
-        print("self.company = " + str(self.company))
-        print("self = " + str(self))
-        return companyName == self.company
+        return self.is_active and companyName == self.company
     
     def get_id(self):
         return(json.dumps([self.company, self.id]))
@@ -338,7 +335,7 @@ def load_user(sessionList):
     conn = sqlite3.connect('databases/' + sessionList[0] + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
-    emp_info = db.id_pull_employee_info(str(sessionList[1])) + ["",]
+    emp_info = db.id_pull_employee_info(str(sessionList[1]))
     if emp_info == 0:
         return None
     conn.close()
@@ -432,7 +429,7 @@ def index():
         if login_info != '':
             db_login_indicator = db.pull_employee_info(login_info)
             if db_login_indicator != 0 and db_login_indicator != 1:
-                emp = db.pull_employee_info(login_info) + ["",]
+                emp = db.pull_employee_info(login_info)
                 emp = employee(emp)
                 login_user(emp)
                 return redirect(url_for('index'))
