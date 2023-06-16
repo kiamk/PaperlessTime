@@ -345,7 +345,6 @@ def load_user(sessionList):
 def check_authorization():
     file = open('authorizedCompanies.json', 'r')
     companyName = request.path.rsplit('/p')[0].split('/c/')[1]
-    print("companyName = " + str(companyName))
     authorizedCompanies = [x.lower() for x in json.load(file)]
     if not(companyName in authorizedCompanies) and not('signup' in request.path):
         return redirect(url_for('cSignup', companyName = companyName))
@@ -410,40 +409,9 @@ def add_employee():
         form = newempform(formdata = None))
 
 # home page
-@app.route("/", methods=['GET', 'POST'])
+@app.route("/")
 def index():
-    username = None
-    password = None
-    # initializing db object
-    conn = sqlite3.connect('databases/PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    form = loginform()
-    
-    #0 for empty and 1 for has content
-    databaseContent = db.check_empty()
-
-    if form.validate_on_submit():
-        username = form.username.data.lower()
-        form.username.data = ''
-        password = form.password.data
-        form.password.data = ''
-        login_info = (username, password)
-        if login_info != '':
-            db_login_indicator = db.pull_employee_info(login_info)
-            if db_login_indicator != 0 and db_login_indicator != 1:
-                emp = db.pull_employee_info(login_info)
-                emp = employee(emp)
-                login_user(emp)
-                return redirect(url_for('index'))
-            elif db_login_indicator == 0:
-                flash("The username you entered could not be found!")
-                return redirect(url_for('index'))
-            elif db_login_indicator == 1:
-                flash("The password you entered was incorrect!")
-                return redirect(url_for('index'))
-    conn.close()
-    return render_template("index.html", username = username, password = password, databaseContent=databaseContent, form = loginform(formdata=None))
+    return render_template("welcome.html")
         
 @app.route("/dashboard", methods=['GET', 'POST'])
 @login_required
@@ -657,9 +625,7 @@ def cIndex(companyName):
                 # adding the one in front of company name as a holder encase company name is empty, this will be removed in the user innit
                 emp = db.pull_employee_info(login_info)
                 emp = employee(emp)
-                print("login user info = " + str(emp))
                 login_user(emp)
-                print("post2")
                 return redirect(url_for('cIndex', companyName = companyName))
             elif db_login_indicator == 0:
                 flash("The username you entered could not be found!")
@@ -718,7 +684,7 @@ def cChatroom(companyName):
 def cLogout(companyName):
     logout_user()
     flash("Successfully Logged Out")
-    return redirect(url_for('cIndex'))
+    return redirect(url_for('cIndex', companyName = companyName))
 
 @app.route("/c/<companyName>/p/clock_in/")
 @login_required
