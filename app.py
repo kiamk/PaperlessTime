@@ -1,7 +1,5 @@
-#Kiam Kaiser
-#CS498
-#Professor Scott Spetka
 #scheduled and acutal worked time
+#issue persists where if another user logs in on another site it marks the first logged in user as not logged in
 from flask import Flask, render_template, flash, request, redirect, url_for, session
 from flask_wtf import FlaskForm
 from functools import wraps
@@ -22,6 +20,9 @@ import random
 # changing timezone for pythonanywhere comment out these two lines when not running local
 #os.environ["TZ"] = "America/New_York"
 #time.tzset()
+#uncomment path with home when running on python anywhere to make sure files open properly
+#path = "/home/kaiserk/mysite/"
+path = ""
 
 #create config file reader and a flag for if the config file is not found. when not found prompt the user to use the form assosiated with making one
 
@@ -344,7 +345,10 @@ def load_user(sessionList):
 @app.before_request
 def check_authorization():
     file = open('authorizedCompanies.json', 'r')
-    companyName = request.path.rsplit('/p')[0].split('/c/')[1]
+    if(request.path[:3]) == '/c/':
+        companyName = request.path.rsplit('/p')[0].split('/c/')[1]
+    else:
+        companyName = 'welcome'
     authorizedCompanies = [x.lower() for x in json.load(file)]
     if not(companyName in authorizedCompanies) and not('signup' in request.path):
         return redirect(url_for('cSignup', companyName = companyName))
