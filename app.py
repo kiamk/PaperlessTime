@@ -1,5 +1,6 @@
 #scheduled and acutal worked time
-#issue persists where if another user logs in on another site it logs out the first logged in user
+#add function to get the amount of hours an employee worked in the last pay period
+#   make sure to handle employees not clocking out
 #welcome page redirects to /c/welcome/p/signup/ and not the proper welcome page so fix that
 from flask import Flask, render_template, flash, request, redirect, url_for, session, current_app
 from flask_wtf import FlaskForm
@@ -161,10 +162,6 @@ def send_email(recipient, subject, message):
     server = smtplib.SMTP("smtp.gmail.com", 587)
     server.starttls()
     server.login(email, passwd)
-
-#change the below to referencing a setup info document and keeping a 14 day counter based on that info
-#   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
-#           maybe this doc has a last pay period start entry so 14 days can just be counted from then if the program is turned off
 
 #returns date object of the start of the last pay period
 def curPayPrdStart(companyName):
