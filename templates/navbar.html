@@ -1,7 +1,4 @@
-<!-- Kiam Kaiser
-     CS498
-     Professor Scott Spetka -->
-<!-- ____________________below is for when using company name________________________________-->
+<!-- ____________________below is for when a company is active________________________________-->
 {% if request.path[:3] == '/c/' %}
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <a class="navbar-brand ms-3" href={{ url_for('cIndex', companyName=companyName) }}>Paperless Time</a>
