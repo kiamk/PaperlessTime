@@ -11,7 +11,7 @@
 
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
 
-      {% if current_user.is_authenticated(companyName) %}
+      {% if current_user.is_authenticated() %}
         <ul class="navbar-nav me-auto">
           <li class="nav-item text-center">
               <a class="nav-link" href={{ url_for('cDashboard', companyName=companyName) }}>Dashboard</a>

@@ -7,7 +7,7 @@
     <center>
     {% if request.path[:3] == '/c/' %}
         <!-- __________________below here for company pages______________________-->
-        {% if current_user.is_authenticated(companyName) %}
+        {% if current_user.is_authenticated() %}
             <h1>Hello, {{ current_user.name }}!</h1>
             <p>Please clock in or clock out by clicking the buttons below</p>
             <br/>
@@ -34,7 +34,7 @@
     
         <!-- _____________________below here for demo pages______________-->
     {% else %}
-        {% if current_user.is_authenticated(companyName) %}
+        {% if current_user.is_authenticated() %}
             <h1>Hello, {{ current_user.name }}!</h1>
             <p>Please clock in or clock out by clicking the buttons below</p>
             <br/>

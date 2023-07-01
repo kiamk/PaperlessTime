@@ -8,8 +8,7 @@
     <center>
         {% if request.path[:3] == '/c/' %}
         <!-- ____________________below here for company pages__________________________-->
-            <script>alert({{databaseContent}}) </script>
-            {% if databaseContent != 0 and current_user.is_authenticated(companyName) == false%}
+            {% if databaseContent != 0 and current_user.is_authenticated() == false%}
             {% else %}
                 {% if databaseContent == 0 %}
                     <b><h1>Add Owner</h1></b>
@@ -35,7 +34,7 @@
             {% endif %}
         {% else %}
         <!-- _________________________below here for demo pages_____________________-->
-            {% if databaseContent != 0 and current_user.is_authenticated(companyName) == false%}
+            {% if databaseContent != 0 and current_user.is_authenticated() == false%}
                 <meta http-equiv="Refresh" content="0; url='{{ url_for('index', companyName=companyName) }}'" />
             {% else %}
                 {% if databaseContent == 0 %}

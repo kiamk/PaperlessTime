@@ -1,6 +1,7 @@
 #scheduled and acutal worked time
-#issue persists where if another user logs in on another site it marks the first logged in user as not logged in
-from flask import Flask, render_template, flash, request, redirect, url_for, session
+#issue persists where if another user logs in on another site it logs out the first logged in user
+#welcome page redirects to /c/welcome/p/signup/ and not the proper welcome page so fix that
+from flask import Flask, render_template, flash, request, redirect, url_for, session, current_app
 from flask_wtf import FlaskForm
 from functools import wraps
 from wtforms import StringField, SubmitField, PasswordField, DateTimeLocalField, SelectField, IntegerField, DateField
@@ -33,8 +34,8 @@ login_manager.init_app(app)
 login_manager.login_view = "index"
 
 #returns a list of employee name strings which is pulled from the database
-def getEmployeeNameList():
-    conn = sqlite3.connect('databases/PaperlessTime.db')
+def getEmployeeNameList(companyName):
+    conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     employeeList = list(db.pull_employee_name_list())
@@ -46,7 +47,9 @@ def getEmployeeNameList():
 
 # anonymous user class with the new is_authenticated
 class anonymous(AnonymousUserMixin):
-    def is_authenticated(self, companyName):
+    position = 0
+    
+    def is_authenticated(self):
         return False
     
 login_manager.anonymous_user = anonymous
@@ -68,8 +71,10 @@ class employee(UserMixin):
     def __str__(self):
         return f"{self.id}, {self.name}, {self.username}, {self.password},\
                 {self.email}, {self.phone_number}, {self.position}, {self.clock_in_history}, {self.smsOptIn}, {self.company}"
+                
     
-    def is_authenticated(self, companyName):
+    def is_authenticated(self):
+        companyName = request.path.rsplit('/p')[0].split('/c/')[1]
         return self.is_active and companyName == self.company
     
     def get_id(self):
@@ -77,6 +82,24 @@ class employee(UserMixin):
 
     def get_clock_tuple(self):
         return tuple([self.id, self.clock_in_history])
+
+def login_required(func):
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if current_app.config.get("LOGIN_DISABLED"):
+            pass
+        elif not current_user.is_authenticated():
+            flash("Please login to access this page")
+            return current_app.redirect(url_for('cIndex', companyName = request.path.rsplit('/p')[0].split('/c/')[1]))
+        
+        # flask 1.x compatibility
+        # current_app.ensure_sync is only available in Flask >= 2.0
+        if callable(getattr(current_app, "ensure_sync", None)):
+            return current_app.ensure_sync(func)(*args, **kwargs)
+        return func(*args, **kwargs)
+
+    return decorated_view
+
 # create new employee form
 class newempform(FlaskForm):
     name = StringField('name (first last)', validators=[InputRequired()])
@@ -239,10 +262,10 @@ def getScheduleStr():
     scheduleStr = scheduleStr.replace("\'", "\"")
     return(scheduleStr)
 
-def addToSchedule():
+def addToSchedule(companyName):
     schedule = getSchedule()
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeNameList()
+    form.employeeName.choices = getEmployeeNameList(companyName)
     newScheduleEntry = {"title": "", "start": "", "end": "", "color": ""}
     
     if form.validate_on_submit():
@@ -253,7 +276,7 @@ def addToSchedule():
         conn = sqlite3.connect('databases/PaperlessTime.db')
         cur = conn.cursor()
         db = dbmgmt(conn, cur)
-        id = db.name_pull_employee_info(str(form.employeeName.data))[0]
+        id = db.name_pull_employee_info(str(form.employeeName.data))
         #the if statement below creates seemingly random colors based on the employee id with little repitiion
         #also ensures that if the event icon is too bright that black text is used
         id = id + 1
@@ -307,7 +330,7 @@ def addToSchedule():
             newScheduleEntry["color"] = "rgb(" + str(a) + "," + str(b) + ", " + str(c) + ")"
         
         form = scheduleEmployeeForm(formdata = None)
-        form.employeeName.choices = getEmployeeNameList()
+        form.employeeName.choices = getEmployeeNameList(companyName)
     if (newScheduleEntry):
         schedule.append(newScheduleEntry)
     
@@ -426,7 +449,7 @@ def dashboard():
     form.employeeName.choices = getEmployeeNameList()
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule()
+        addToSchedule('')
         return redirect(url_for('dashboard'))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
@@ -440,7 +463,7 @@ def schedule():
     form.employeeName.choices = getEmployeeNameList()
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule()
+        addToSchedule('')
         return redirect(url_for('schedule'))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
@@ -580,7 +603,7 @@ def cAdd_employee(companyName):
         if new_emp_info != '':
             db_add_indicator = db.add_new_employee(new_emp_info)
             if db_add_indicator == 1:
-                flash("The employee has been successfully added to the database, you may now login!")
+                flash("The employee has been successfully added to the database and may now login!")
                 return redirect(url_for('cIndex', companyName=companyName))
             elif db_add_indicator == 0:
                 flash("An employee with this name already exists!")
@@ -648,13 +671,13 @@ def cDashboard(companyName):
     getSchedule()
     #send_message("5189155775", "test message")
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeNameList()
+    form.employeeName.choices = getEmployeeNameList(companyName)
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule()
+        addToSchedule(companyName)
         return redirect(url_for('cDashboard'))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
-    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
+    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form, companyName=companyName)
 
 @app.route("/c/<companyName>/p/schedule/", methods = ["GET", "POST"])
 @login_required
@@ -662,13 +685,13 @@ def cSchedule(companyName):
     #creating a schedule Json if there isnt one yet
     getSchedule()
     form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeNameList()
+    form.employeeName.choices = getEmployeeNameList(companyName)
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule()
+        addToSchedule(companyName)
         return redirect(url_for('cSchedule'))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
-    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
+    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form, companyName=companyName)
 
 @app.route("/c/<companyName>/p/chatroom/")
 @login_required
@@ -730,13 +753,14 @@ def cClock_out(companyName):
 @login_required
 def cSettings(companyName):
     #add seperate settings page for managers and employees to do things like turn off sms
+    #also ensure the confirm modal works properly
     conn = sqlite3.connect('PaperlessTime.db')
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     checkForm = confirmForm()
     form = settingsForm()
-    form.employeeName.choices = getEmployeeNameList()
-    form.removeEmployee.choices = getEmployeeNameList()
+    form.employeeName.choices = getEmployeeNameList(companyName)
+    form.removeEmployee.choices = getEmployeeNameList(companyName)
     if request.method == 'POST':
         try:
             file = open("companyConfigs/" + "COMPANYNAME", 'r')
@@ -770,7 +794,7 @@ def cSettings(companyName):
         
     
     conn.close()
-    return render_template("settings.html", form = form)
+    return render_template("settings.html", form = form, companyName = companyName)
 
 @app.route("/c/<companyName>/p/signup/")
 def cSignup(companyName):

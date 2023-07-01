@@ -9,7 +9,7 @@
             input how many days after the pay period is over they want to be notified
             input how long the pay period is
             set users as employees or managers -->
-        <form form action={{url_for('settings')}} method = 'post'>
+        <form form action={{url_for('cSettings', companyName = companyName)}} method = 'post'>
             <center><font size="+4"><b> Settings </b></font></center>
             <br/>
             <h> Enter the Length in days of each pay period at your company: </h>
