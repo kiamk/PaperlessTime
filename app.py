@@ -74,7 +74,6 @@ class employee(UserMixin):
 
 
     def is_authenticated(self):
-        print("path == " + str(request.path.rsplit('/p')[0].split('/c/')[1]))
         companyName = request.path.rsplit('/p')[0].split('/c/')[1]
         return self.is_active and companyName == self.company
 
@@ -167,55 +166,33 @@ def send_email(recipient, subject, message):
 #   ie. if the first pay period starts on 05/01/23 then the next pay period starts on 05/15/23
 #           maybe this doc has a last pay period start entry so 14 days can just be counted from then if the program is turned off
 
-#returns the start of the pay period when called on the wednesday before payday
-def getpayprdstart():
-    #ensuring that pay period start date is accurate for a two week pay period where the email is sent on the wednesday
-    #   after the pay period ends
-    today = datetime.datetime.now()
-    if (int(today.strftime("%d")) - 17) > 0:
-        return today.strftime("%m") + "/" + str(int(today.strftime("%d")) - 17) + "/" + today.strftime("%y")
-    else:
-        if int(today.strftime("%m") - 1) > 0:
-            #each elif is for each month
-            if int(today.strftime("%m") - 1) == 1:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 2:
-                if int(today.strftime("%y")) % 4 == 0:
-                    return str(int(today.strftime("%m")) - 1) + "/" +\
-                    str(29 + int(today.strftime("%d")) - 17) + "/" + today.strftime("%y")
-                else:
-                    return str(int(today.strftime("%m")) - 1) + "/" +\
-                    str(28 + int(today.strftime("%d")) - 17) + "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 3:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 4:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(30 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 5:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 6:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(30 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 7:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 8:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 9:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(30 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 10:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(31 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
-            elif int(today.strftime("%m") - 1) == 11:
-                return str(int(today.strftime("%m")) - 1) + "/" + str(30 + int(today.strftime("%d")) - 17) +\
-                "/" + today.strftime("%y")
+#returns date object of the start of the last pay period
+def curPayPrdStart(companyName):
+    try:
+            file = open(path + "companyConfigs/" + companyName + "Config", 'r')
+            payPrdInfo = json.load(file)
+            file.close()
+            file = open(path + "companyConfigs/" + companyName + "Config", 'w')
+    except:
+        file = open(path + "companyConfigs/" + companyName + "Config", 'w')
+        payPrdInfo = {"payPeriodLength": "0", "daysAfterPayPeriod": "0", "payPeriodStart": "2000-01-01"}
+    
+    
+    ppStart = datetime.datetime.strptime(payPrdInfo["payPeriodStart"], '%Y-%m-%d').date()
+    
+    ppLength = int(payPrdInfo["payPeriodLength"])
+    while ppLength > 0:
+        if ppStart + datetime.timedelta(days = ppLength) < (datetime.date.today() - datetime.timedelta(days = 14)):
+            ppStart = ppStart + datetime.timedelta(days = ppLength)
         else:
-            return "12/" + str(31 + int(today.strftime("%d")) - 17) + "/" + str(int(today.strftime("%y") - 1))
+            break
+    
+    json.dump(payPrdInfo, file)
+    file.close()
+    
+    return ppStart
+
+print("curPayPrdStart = " + str(curPayPrdStart("DemoCompany")))
 
 #returns an array of the schedule events for the current year or creates a new file if one has not been made yet
 def getSchedule(companyName = ""):
@@ -384,199 +361,11 @@ def check_authorization():
     if not(companyName in authorizedCompanies) and not('signup' in request.path):
         return redirect(url_for('cSignup', companyName = companyName))
     file.close()
-#--------------------pages for no company name below-------------------------
 
-# add_employee page
-@app.route("/add_employee", methods=['GET', 'POST'])
-def add_employee():
-    # initializing db object
-    conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    name = None
-    username = None
-    password = None
-    email = None
-    phone_number = None
-    form = newempform()
-
-
-    if form.validate_on_submit():
-        name = form.name.data
-        form.name.data = ''
-        username = form.username.data
-        form.username.data = ''
-        password = form.password.data
-        form.password.data = ''
-        email = form.email.data
-        form.email.data = ''
-        phone_number = form.phone_number.data
-        form.phone_number.data = ''
-        form = newempform(formdata = None)
-        new_emp_info = (name, username, password, email, phone_number)
-        if new_emp_info != '':
-            db_add_indicator = db.add_new_employee(new_emp_info)
-            if db_add_indicator == 1:
-                flash("The employee has been successfully added to the database, you may now login!")
-                new_emp_info = None
-                conn.close()
-                return redirect("/")
-            elif db_add_indicator == 0:
-                flash("An employee with this name already exists!")
-                new_emp_info = None
-                conn.close()
-                return redirect("/add_employee")
-            elif db_add_indicator == 2:
-                flash("An employee with this username already exists!")
-                new_emp_info = None
-                conn.close()
-                return redirect("/add_employee")
-
-        conn.close()
-
-
-    return render_template("add_employee.html",
-        name = name,
-        username = username,
-        password = password,
-        email = email,
-        phone_number = phone_number,
-        form = newempform(formdata = None))
-
-# home page
+#page for no company name specified
 @app.route("/")
 def index():
     return render_template("welcome.html")
-
-@app.route("/dashboard", methods=['GET', 'POST'])
-@login_required
-def dashboard():
-    #creating a schedule Json if there isnt one yet
-    getSchedule()
-    form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeNameList()
-    #ensuring that the form does not resubmit on refresh
-    if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule('')
-        return redirect(url_for('dashboard'))
-    elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
-    return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
-
-@app.route("/schedule", methods = ["GET", "POST"])
-@login_required
-def schedule():
-    #creating a schedule Json if there isnt one yet
-    getSchedule()
-    form = scheduleEmployeeForm()
-    form.employeeName.choices = getEmployeeNameList()
-    #ensuring that the form does not resubmit on refresh
-    if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
-        addToSchedule('')
-        return redirect(url_for('schedule'))
-    elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
-    return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(), form=form)
-
-@app.route("/chatroom")
-@login_required
-def chatroom():
-    idList = []
-    for id in range(2, 500):
-        if id % 3 == 0:
-            idList.append("rgb(" + str(int(255/id)) + "," + str(0+(id*id*9)%200+55) + ", " + str(0+(id*10)%255) + ")")
-        elif id % 3 == 1:
-            idList.append("rgb(" + str(0+(id*id*9)%200+55) + "," + str(int(255/id)) + ", " + str(0+(id*10)%255) + ")")
-        elif id % 3 == 2:
-            idList.append("rgb(" + str(0+(id*10)%255) + "," + str(0+(id*id*9)%200+55) + ", " + str(int(255/id)) + ")")
-    return render_template("chatroom.html", idList = json.dumps(idList))
-
-@app.route("/logout")
-@login_required
-def logout():
-    logout_user()
-    flash("Successfully Logged Out")
-    return redirect(url_for('index'))
-
-@app.route("/clock_in")
-@login_required
-def clock_in():
-    conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    clock_in_indicator = db.clock_in(current_user.get_clock_tuple())
-    conn.close()
-    if clock_in_indicator == 0:
-        flash("You forgot to clock out last shift please notify an administrator")
-        return redirect(url_for("dashboard"))
-    elif clock_in_indicator == 1:
-        flash("You have succesfully clocked-in! Have a great day!")
-        return redirect(url_for("dashboard"))
-    else:
-        flash("System error! not clocked in please notify an administrator")
-        return redirect(url_for("index"))
-
-@app.route("/clock_out")
-@login_required
-def clock_out():
-    conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    clock_in_indicator = db.clock_out(current_user.get_clock_tuple())
-    conn.close()
-    if clock_in_indicator == 0:
-        flash("You forgot to clock in this shift please notify an administrator")
-        return redirect("/dashboard")
-    elif clock_in_indicator == 1:
-        flash("You have succesfully clocked-out! Have a great day!")
-        return redirect(url_for("dashboard"))
-    else:
-        flash("System error! not clocked out please notify an administrator")
-        return redirect(url_for("index"))
-
-@app.route("/settings", methods=['GET', 'POST'])
-@login_required
-def settings():
-    #add seperate settings page for managers and employees to do things like turn off sms
-    conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
-    cur = conn.cursor()
-    db = dbmgmt(conn, cur)
-    checkForm = confirmForm()
-    form = settingsForm()
-    form.employeeName.choices = getEmployeeNameList()
-    form.removeEmployee.choices = getEmployeeNameList()
-    if request.method == 'POST':
-        try:
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'r')
-            configInfo = json.load(file)
-            file.close()
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'w')
-        except:
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'w')
-            configInfo = {"payPeriodLength": "", "daysAfterPayPeriod": "", "payPeriodStart": "",}
-        if form.payPeriodLength.data:
-            configInfo["payPeriodLength"] = form.payPeriodLength.data
-        if form.daysAfterPayPeriod.data:
-            configInfo["daysAfterPayPeriod"] = form.daysAfterPayPeriod.data
-        if form.payPeriodStart.data:
-            configInfo["payPeriodStart"] = str(form.payPeriodStart.data)
-        if form.employeeName.data != 'Select an Employee':
-            if form.employeePosition.data:
-                current_user.position = form.employeePosition.data
-                db.update_employee_info()
-            else:
-                flash("please enter the new position for the employee")
-        if form.removeEmployee.data != 'Select an Employee':
-            modalActive = 1
-            employeeToRemove = db.name_pull_employee_info(form.removeEmployee.data)
-            db.delete_employee(employeeToRemove)
-
-        json.dump(configInfo, file)
-        file.close()
-        form = settingsForm(formdata = None)
-        flash("Settings Updated!")
-
-
-    conn.close()
-    return render_template("settings.html", form = form)
 
 # ----------company pages below. these pages pull company config files. the small c in front of function names stands for company-----------------
 # add_employee page
@@ -592,8 +381,12 @@ def cAdd_employee(companyName):
     email = None
     phone_number = None
     form = newempform()
-    databaseContent = db.check_empty()
+    databaseContent = db.check_content()
 
+    if db.check_content() == 1 and not current_user.is_authenticated():
+        flash("Please login to access this page")
+        return redirect(url_for('cIndex', companyName = request.path.rsplit('/p')[0].split('/c/')[1]))
+        
 
     if form.validate_on_submit():
         name = form.name.data
@@ -646,7 +439,7 @@ def cIndex(companyName):
     cur = conn.cursor()
     db = dbmgmt(conn, cur)
     form = loginform()
-    databaseContent = db.check_empty()
+    databaseContent = db.check_content()
 
     if form.validate_on_submit():
         username = form.username.data.lower()
@@ -770,14 +563,14 @@ def cSettings(companyName):
     form.employeeName.choices = getEmployeeNameList(companyName)
     form.removeEmployee.choices = getEmployeeNameList(companyName)
     if request.method == 'POST':
+        configInfo = {"payPeriodLength": "", "daysAfterPayPeriod": "", "payPeriodStart": ""}
         try:
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'r')
+            file = open(path + "companyConfigs/" + companyName + "Config", 'r')
             configInfo = json.load(file)
             file.close()
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'w')
+            file = open(path + "companyConfigs/" + companyName + "Config", 'w')
         except:
-            file = open(path + "companyConfigs/" + "COMPANYNAME", 'w')
-            configInfo = {"payPeriodLength": "", "daysAfterPayPeriod": "", "payPeriodStart": "",}
+            file = open(path + "companyConfigs/" + companyName + "Config", 'w')
         if form.payPeriodLength.data:
             configInfo["payPeriodLength"] = form.payPeriodLength.data
         if form.daysAfterPayPeriod.data:

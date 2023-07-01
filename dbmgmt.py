@@ -46,7 +46,7 @@ class dbmgmt():
         """)
 
     #check if employees has entries, if not it is time to create the owner account
-    def check_empty(self):
+    def check_content(self):
         self.cur.execute("SELECT * FROM employees WHERE employee_id=1")
         if self.cur.fetchall():
             return 1
