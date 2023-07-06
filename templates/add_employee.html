@@ -1,15 +1,14 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <center>
+    <div class="container p-4 bg-light rounded"><center>
         {% if databaseContent != 0 and current_user.is_authenticated() == false%}
         {% else %}
             {% if databaseContent == 0 %}
                 <b><h1>Add Owner</h1></b>
             {% endif %}
-            <h1>Please enter your information</h1>
+            <h1>Please enter the employee information</h1>
             <p>Press Submit when finished</p>
-            <br/>
             <br/>
             <form form action= {{ url_for("cAdd_employee", companyName=companyName) }} method="post">
                 {{ form.hidden_tag() }}
@@ -26,5 +25,5 @@
                 {{ form.submit(class="btn btn-primary") }}
             </form>
         {% endif %}
-    </center>
+        </center></div>
 {% endblock %}

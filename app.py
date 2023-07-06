@@ -251,7 +251,7 @@ def addToSchedule(companyName):
         conn = sqlite3.connect(path + 'databases/' + companyName + 'PaperlessTime.db')
         cur = conn.cursor()
         db = dbmgmt(conn, cur)
-        id = db.name_pull_employee_info(str(form.employeeName.data))
+        id = db.name_pull_employee_info(str(form.employeeName.data))[0]
         #the if statement below creates seemingly random colors based on the employee id with little repitiion
         #also ensures that if the event icon is too bright that black text is used
         id = id + 1
@@ -473,7 +473,7 @@ def cDashboard(companyName):
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
         addToSchedule(companyName)
-        return redirect(url_for('cDashboard'))
+        return redirect(url_for('cDashboard', companyName = companyName))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("dashboard.html", position = current_user.position, getScheduleStr = getScheduleStr(companyName), form=form, companyName=companyName)
 
@@ -487,7 +487,7 @@ def cSchedule(companyName):
     #ensuring that the form does not resubmit on refresh
     if form.validate_on_submit() and form.employeeName.data != 'Select an Employee':
         addToSchedule(companyName)
-        return redirect(url_for('cSchedule'))
+        return redirect(url_for('cSchedule', companyName = companyName))
     elif(form.employeeName.data == 'Select an Employee'): flash("Error: No Employee Selected, Please Select an Employee")
     return render_template("schedule.html", position = current_user.position, getScheduleStr = getScheduleStr(companyName), form=form, companyName=companyName)
 
@@ -502,7 +502,7 @@ def cChatroom(companyName):
             idList.append("rgb(" + str(0+(id*id*9)%200+55) + "," + str(int(255/id)) + ", " + str(0+(id*10)%255) + ")")
         elif id % 3 == 2:
             idList.append("rgb(" + str(0+(id*10)%255) + "," + str(0+(id*id*9)%200+55) + ", " + str(int(255/id)) + ")")
-    return render_template("chatroom.html", idList = json.dumps(idList))
+    return render_template("chatroom.html", idList = json.dumps(idList), companyName = companyName)
 
 @app.route("/c/<companyName>/p/logout/")
 @login_required
@@ -521,13 +521,13 @@ def cClock_in(companyName):
     conn.close()
     if clock_in_indicator == 0:
         flash("You forgot to clock out last shift please notify an administrator")
-        return redirect(url_for("cDashboard"))
+        return redirect(url_for("cDashboard", companyName = companyName))
     elif clock_in_indicator == 1:
         flash("You have succesfully clocked-in! Have a great day!")
-        return redirect(url_for("cDashboard"))
+        return redirect(url_for("cDashboard", companyName = companyName))
     else:
         flash("System error! not clocked in please notify an administrator")
-        return redirect(url_for("cIndex"))
+        return redirect(url_for("cIndex", companyName = companyName))
 
 @app.route("/c/<companyName>/p/clock_out/")
 @login_required
@@ -539,13 +539,13 @@ def cClock_out(companyName):
     conn.close()
     if clock_in_indicator == 0:
         flash("You forgot to clock in this shift please notify an administrator")
-        return redirect(url_for("cDashboard"))
+        return redirect(url_for("cDashboard", companyName = companyName))
     elif clock_in_indicator == 1:
         flash("You have succesfully clocked-out! Have a great day!")
-        return redirect(url_for("cDashboard"))
+        return redirect(url_for("cDashboard", companyName = companyName))
     else:
         flash("System error! not clocked out please notify an administrator")
-        return redirect(url_for("cIndex"))
+        return redirect(url_for("cIndex", companyName = companyName))
 
 @app.route("/c/<companyName>/p/settings/", methods=['GET', 'POST'])
 @login_required
